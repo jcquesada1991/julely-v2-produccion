@@ -288,11 +288,7 @@ export default function Voucher() {
                         {/* 1. Top Header */}
                         <div className={styles.topHeader}>
                             <div className={styles.brandInfo}>
-                                <img src="/images/logo.png" className={styles.logoImage} alt="Julely" />
-                                <div className={styles.brandText}>
-                                    <h1 className={styles.brandTitle}>Julely</h1>
-                                    <p className={styles.brandSubtitle}>Viajando por el Mundo</p>
-                                </div>
+                                <img src="/images/logo.png" className={styles.logoImage} alt="Julely" style={{ height: '200px', objectFit: 'contain' }} />
                             </div>
                             <div className={styles.confirmationBox}>
                                 <div className={styles.confLabel}>CONFIRMATION NUMBER</div>
@@ -301,7 +297,7 @@ export default function Voucher() {
                         </div>
 
                         {/* 2. Hero Image Banner */}
-                        <div className={styles.heroBanner}>
+                        <div className={styles.heroBanner} style={{ marginTop: '-1rem' }}>
                             <img
                                 src={dest.hero_image_url}
                                 className={styles.heroImg}
