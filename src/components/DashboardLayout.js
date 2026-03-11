@@ -79,7 +79,7 @@ export default function DashboardLayout({ children, title }) {
                 <div className={styles.navHeader}>
                     <div className={styles.brand} onClick={() => router.push('/dashboard')}>
                         <div className={styles.brandLogo}>
-                            <img src="/images/logo_transparent.png" alt="Julely" style={{ height: '145px', objectFit: 'contain' }} />
+                            <img src="/images/logo_transparent.png" alt="Julely" className={styles.navLogoImg} />
                         </div>
                     </div>
 
