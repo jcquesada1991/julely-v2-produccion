@@ -51,9 +51,25 @@ export function AppProvider({ children }) {
     }), []);
 
     const ensureSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            await supabase.auth.refreshSession();
+        try {
+            // Helper function to manage timeouts for auth checks
+            const withTimeout = (promise, ms = 8000) => {
+                return Promise.race([
+                    promise,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de sesión')), ms))
+                ]);
+            };
+
+            const { data: { session } } = await withTimeout(supabase.auth.getSession());
+            if (!session) {
+                const { error } = await withTimeout(supabase.auth.refreshSession());
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            console.warn('La sesión ha expirado o no hay conexión:', error);
+            // Si estuviéramos en un componente podríamos redirigir, por ahora lanzamos error
+            throw new Error('Sesión expirada o sin conexión. Por favor recarga o inicia sesión nuevamente.');
         }
     };
 
@@ -250,7 +266,7 @@ export function AppProvider({ children }) {
     // DESTINOS CRUD
     // ════════════════════════════════════════════════════════════════
     const addDestination = async (newDest) => {
-        await ensureSession();
+        try { await ensureSession(); } catch (err) { showNotification(err.message, 'error'); return false; }
         const { data, error } = await supabase
             .from('destinations')
             .insert([{
@@ -268,7 +284,7 @@ export function AppProvider({ children }) {
             .select()
             .single();
 
-        if (error) { showNotification('Error al crear destino', 'error'); console.error(error); return; }
+        if (error) { showNotification('Error al crear destino', 'error'); console.error(error); return false; }
         setDestinations(prev => {
             const exists = prev.find(d => String(d.id) === String(data.id));
             if (exists) {
@@ -278,10 +294,11 @@ export function AppProvider({ children }) {
         });
         showNotification(`Destino "${data.title}" creado correctamente`);
         await loadAll(true);
+        return true;
     };
 
     const updateDestination = async (id, updatedDest) => {
-        await ensureSession();
+        try { await ensureSession(); } catch (err) { showNotification(err.message, 'error'); return false; }
         const { data, error } = await supabase
             .from('destinations')
             .update({
@@ -298,7 +315,7 @@ export function AppProvider({ children }) {
             .select()
             .single();
 
-        if (error) { showNotification('Error al actualizar destino', 'error'); return; }
+        if (error) { showNotification('Error al actualizar destino', 'error'); return false; }
         setDestinations(prev => {
             const exists = prev.find(d => String(d.id) === String(id));
             if (exists) {
@@ -308,10 +325,11 @@ export function AppProvider({ children }) {
         });
         showNotification('Destino actualizado correctamente');
         await loadAll(true);
+        return true;
     };
 
     const deleteDestination = async (id) => {
-        await ensureSession();
+        try { await ensureSession(); } catch (err) { showNotification(err.message, 'error'); return false; }
         try {
             // 1. Eliminar excursiones (actividades) asociadas
             const { error: activError } = await supabase
@@ -340,12 +358,12 @@ export function AppProvider({ children }) {
                         : 'Error al eliminar destino: ' + (error.message || 'Intenta de nuevo'),
                     'error'
                 );
-                return;
+                return false;
             }
 
             if (!data || data.length === 0) {
                 showNotification('No se pudo eliminar el destino (Verifique permisos)', 'error');
-                return;
+                return false;
             }
 
             // Actualizar estado local
@@ -354,9 +372,11 @@ export function AppProvider({ children }) {
 
             showNotification('Destino y sus excursiones eliminados', 'info');
             await loadAll(true);
+            return true;
         } catch (err) {
             console.error('Error en el proceso de eliminación:', err);
             showNotification('Error inesperado al eliminar el destino', 'error');
+            return false;
         }
     };
 
@@ -520,9 +540,11 @@ export function AppProvider({ children }) {
 
             showNotification(`Usuario "${newUser.name}" creado correctamente`);
             await loadAll(true);
+            return true;
         } catch (err) {
             console.error('Error creando usuario:', err);
             showNotification(`Error al crear usuario: ${err.message || 'Intenta de nuevo'}`, 'error');
+            return false;
         }
     };
 
@@ -593,9 +615,11 @@ export function AppProvider({ children }) {
                     : 'Usuario actualizado correctamente'
             );
             await loadAll(true);
+            return true;
         } catch (err) {
             console.error('Error actualizando usuario:', err);
             showNotification(`Error al actualizar usuario: ${err.message || 'Intenta de nuevo'}`, 'error');
+            return false;
         }
     };
 
@@ -611,22 +635,23 @@ export function AppProvider({ children }) {
                     : 'Error al eliminar usuario: ' + (error.message || 'Intenta de nuevo'),
                 'error'
             );
-            return;
+            return false;
         }
         if (!data || data.length === 0) {
             showNotification('No se pudo eliminar el usuario (Verifique permisos)', 'error');
-            return;
+            return false;
         }
         setUsers(prev => prev.filter(u => String(u.id) !== String(id)));
         showNotification('Usuario eliminado', 'info');
         await loadAll(true);
+        return true;
     };
 
     // ════════════════════════════════════════════════════════════════
     // CLIENTES CRUD
     // ════════════════════════════════════════════════════════════════
     const addClient = async (newClient) => {
-        await ensureSession();
+        try { await ensureSession(); } catch (err) { showNotification(err.message, 'error'); return false; }
         const { data: { user } } = await supabase.auth.getUser();
 
         const { data, error } = await supabase
@@ -642,7 +667,7 @@ export function AppProvider({ children }) {
             }])
             .select().single();
 
-        if (error) { showNotification('Error al crear cliente', 'error'); console.error(error); return; }
+        if (error) { showNotification('Error al crear cliente', 'error'); console.error(error); return false; }
 
         if (newClient.nationality) {
             const { error: identityError } = await supabase.from('client_identity').insert([{
@@ -668,10 +693,11 @@ export function AppProvider({ children }) {
         });
         showNotification(`Cliente "${data.name}" creado correctamente`);
         await loadAll(true);
+        return true;
     };
 
     const updateClient = async (id, updatedClient) => {
-        await ensureSession();
+        try { await ensureSession(); } catch (err) { showNotification(err.message, 'error'); return false; }
         const { data, error } = await supabase
             .from('clients')
             .update({
@@ -684,7 +710,7 @@ export function AppProvider({ children }) {
             })
             .eq('id', id).select().single();
 
-        if (error) { showNotification('Error al actualizar cliente', 'error'); return; }
+        if (error) { showNotification('Error al actualizar cliente', 'error'); return false; }
 
         if (updatedClient.nationality) {
             const { error: identityError } = await supabase.from('client_identity').upsert([{
@@ -710,6 +736,7 @@ export function AppProvider({ children }) {
         });
         showNotification('Cliente actualizado correctamente');
         await loadAll(true);
+        return true;
     };
 
     const deleteClient = async (id) => {

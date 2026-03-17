@@ -6,17 +6,19 @@ import { Upload, Link, X, Image as ImageIcon, Loader } from 'lucide-react';
  * Comprime una imagen usando Canvas antes de subirla.
  * Reduce el tamaño de 4-8MB a ~300-500KB sin pérdida visual notable.
  */
-async function compressImage(file, maxWidthPx = 1920, quality = 0.85) {
+async function compressImage(file, maxWidthPx = 1920, maxHeightPx = 1440, quality = 0.85) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                // Calcular dimensiones manteniendo proporción
+                // Calcular dimensiones manteniendo proporción (Fit within maxWidth x maxHeight)
                 let { width, height } = img;
-                if (width > maxWidthPx) {
-                    height = Math.round((height * maxWidthPx) / width);
-                    width = maxWidthPx;
+                
+                if (width > maxWidthPx || height > maxHeightPx) {
+                    const ratio = Math.min(maxWidthPx / width, maxHeightPx / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
                 }
 
                 const canvas = document.createElement('canvas');

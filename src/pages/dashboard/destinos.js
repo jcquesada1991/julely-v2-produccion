@@ -56,19 +56,24 @@ export default function Destinations() {
     };
 
     const handleSubmit = async (formData) => {
+        let success = true;
         if (editingDest) {
             // Editing an existing destination
-            await updateDestination(editingDest.id, formData);
+            success = await updateDestination(editingDest.id, formData);
         } else if (formData._savedId) {
             // DestinationForm already inserted the row directly (needed ID for excursions/images)
             // Just refresh state from DB
             await refetch();
         } else {
             // Fallback: use context function
-            await addDestination(formData);
+            success = await addDestination(formData);
         }
-        setIsModalOpen(false);
-        setIsDirty(false);
+        
+        if (success !== false) {
+            setIsModalOpen(false);
+            setIsDirty(false);
+            setEditingDest(null);
+        }
     };
 
     const handleDelete = async (id) => {

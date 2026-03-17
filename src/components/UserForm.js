@@ -4,6 +4,7 @@ import styles from '@/styles/FormModal.module.css';
 import { ROLES } from '@/context/AuthContext';
 
 export default function UserForm({ initialData, onSubmit, onCancel, onDirty }) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -38,16 +39,21 @@ export default function UserForm({ initialData, onSubmit, onCancel, onDirty }) {
         if (onDirty) onDirty(true);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const submitData = {
-            ...formData,
-            name: `${formData.name} ${formData.lastName}`.trim(),
-            // Only include password if it was set (for creation or update)
-            ...(formData.password ? { password: formData.password } : {})
-        };
-        delete submitData.lastName;
-        onSubmit(submitData);
+        setIsSubmitting(true);
+        try {
+            const submitData = {
+                ...formData,
+                name: `${formData.name} ${formData.lastName}`.trim(),
+                // Only include password if it was set (for creation or update)
+                ...(formData.password ? { password: formData.password } : {})
+            };
+            delete submitData.lastName;
+            await onSubmit(submitData);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const roleOptions = [
@@ -192,11 +198,11 @@ export default function UserForm({ initialData, onSubmit, onCancel, onDirty }) {
             </div>
 
             <div className={styles.modalFooter}>
-                <button type="button" className={styles.btnSecondary} onClick={onCancel}>
+                <button type="button" className={styles.btnSecondary} onClick={onCancel} disabled={isSubmitting}>
                     Cancelar
                 </button>
-                <button type="submit" className={styles.btnPrimary}>
-                    {initialData ? 'Actualizar Usuario' : 'Crear Usuario'}
+                <button type="submit" className={styles.btnPrimary} disabled={isSubmitting}>
+                    {isSubmitting ? 'Guardando...' : (initialData ? 'Actualizar Usuario' : 'Crear Usuario')}
                 </button>
             </div>
         </form>

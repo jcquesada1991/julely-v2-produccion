@@ -212,15 +212,18 @@ export default function Clients() {
             >
                 <ClientForm
                     initialData={currentClient}
-                    onSubmit={(data) => {
+                    onSubmit={async (data) => {
+                        let success = false;
                         if (currentClient) {
-                            updateClient(currentClient.id, data);
+                            success = await updateClient(currentClient.id, data);
                         } else {
-                            addClient(data);
+                            success = await addClient(data);
                         }
-                        setIsDirty(false);
-                        setIsModalOpen(false);
-                        setCurrentClient(null);
+                        if (success) {
+                            setIsDirty(false);
+                            setIsModalOpen(false);
+                            setCurrentClient(null);
+                        }
                     }}
                     onCancel={handleClose}
                     onDirty={setIsDirty}
@@ -231,6 +234,7 @@ export default function Clients() {
 }
 
 function ClientForm({ initialData, onSubmit, onCancel, onDirty }) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(initialData || {
         name: '',
         surname: '',
@@ -289,8 +293,18 @@ function ClientForm({ initialData, onSubmit, onCancel, onDirty }) {
 
     const groupStyle = { marginBottom: '1rem' };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await onSubmit(formData);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }}>
+        <form onSubmit={handleSubmit}>
             {/* Grid layout 2 columns */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1rem' }}>
                 <div style={groupStyle}>
@@ -398,17 +412,18 @@ function ClientForm({ initialData, onSubmit, onCancel, onDirty }) {
             </div>
 
             <div className={styles.modalActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                <button type="button" onClick={onCancel} style={{
+                <button type="button" onClick={onCancel} disabled={isSubmitting} style={{
                     padding: '0.65rem 1.25rem',
                     border: '1px solid var(--border-color)',
                     background: 'transparent',
                     borderRadius: '8px',
-                    cursor: 'pointer',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     fontWeight: 500,
-                    color: 'var(--text-secondary)'
+                    color: 'var(--text-secondary)',
+                    opacity: isSubmitting ? 0.6 : 1
                 }}>Cancelar</button>
-                <button type="submit" className="btn-primary">
-                    {initialData ? 'Actualizar' : 'Crear Cliente'}
+                <button type="submit" className="btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? 'Guardando...' : (initialData ? 'Actualizar' : 'Crear Cliente')}
                 </button>
             </div>
         </form >
