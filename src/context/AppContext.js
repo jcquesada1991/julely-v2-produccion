@@ -61,7 +61,7 @@ export function AppProvider({ children }) {
             };
 
             // Intentar obtener sesión actual
-            const { data: { session }, error: sessionErr } = await withTimeout(supabase.auth.getSession());
+            const { data: { session }, error: sessionErr } = await withTimeout(supabase.auth.getUser());
             
             if (sessionErr) throw sessionErr;
 
