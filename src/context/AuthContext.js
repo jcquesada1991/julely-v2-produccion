@@ -148,27 +148,36 @@ export function AuthProvider({ children }) {
         router.push('/login');
     };
 
-    // Auto-logout after 30 minutos de inactividad
+    // Auto-logout after 60 minutos de inactividad (resistente a PC Sleep mode)
     useEffect(() => {
         if (!currentUser) return;
 
-        let timeoutId;
-        const resetTimer = () => {
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                // Notificar de alguna manera si quisieras, aquí cerramos sesión directamente
-                logout();
-            }, 60 * 60 * 1000); // 60 minutos
+        const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 60 minutos
+        
+        // Inicializamos el timestamp de última actividad
+        localStorage.setItem('lastActivityTime', Date.now().toString());
+
+        const updateActivityTime = () => {
+            localStorage.setItem('lastActivityTime', Date.now().toString());
         };
+
+        // Verificamos periódicamente (cada minuto) si ha excedido el límite
+        const checkInterval = setInterval(() => {
+            const lastActivity = parseInt(localStorage.getItem('lastActivityTime') || '0', 10);
+            if (Date.now() - lastActivity > INACTIVITY_LIMIT_MS) {
+                console.log('Sesión cerrada por inactividad.');
+                logout();
+            }
+        }, 60 * 1000);
 
         const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
         
-        events.forEach(e => window.addEventListener(e, resetTimer));
-        resetTimer();
+        // Usamos passive: true para no afectar el rendimiento del scroll
+        events.forEach(e => window.addEventListener(e, updateActivityTime, { passive: true }));
 
         return () => {
-            events.forEach(e => window.removeEventListener(e, resetTimer));
-            if (timeoutId) clearTimeout(timeoutId);
+            events.forEach(e => window.removeEventListener(e, updateActivityTime));
+            clearInterval(checkInterval);
         };
     }, [currentUser]);
 

@@ -63,8 +63,8 @@ export function AppProvider({ children }) {
                 });
             };
 
-            // Intentar obtener sesión actual
-            const { data: { session }, error: sessionErr } = await withTimeout(supabase.auth.getUser());
+            // Intentar obtener sesión actual usando getSession (maneja auto-refresh localmente de forma segura)
+            const { data: { session }, error: sessionErr } = await withTimeout(supabase.auth.getSession());
             
             if (sessionErr) throw sessionErr;
 
@@ -405,7 +405,8 @@ export function AppProvider({ children }) {
             const voucherCode = `VOU-${prefix}-${timestamp}`;
             const today = new Date().toISOString().split('T')[0];
 
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
 
             const { data, error } = await supabase
                 .from('bookings')
@@ -698,7 +699,8 @@ export function AppProvider({ children }) {
     // ════════════════════════════════════════════════════════════════
     const addClient = async (newClient) => {
         try { await ensureSession(); } catch (err) { showNotification(err.message, 'error'); return false; }
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         const { data, error } = await supabase
             .from('clients')
