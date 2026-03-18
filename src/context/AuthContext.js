@@ -116,14 +116,18 @@ export function AuthProvider({ children }) {
 
         // Listener de cambios (login, logout, token refresh)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                if (event === 'SIGNED_OUT' || !session) {
-                    setCurrentUser(null);
-                    router.push('/login');
-                } else {
-                    await loadProfile(session?.user ?? null);
-                }
-                setIsLoading(false);
+            (event, session) => {
+                // Ejecutamos fuera del ciclo de eventos del SDK de Supabase Auth
+                // para que no le congelemos su Promise si 'loadProfile' se atasca.
+                setTimeout(async () => {
+                    if (event === 'SIGNED_OUT' || !session) {
+                        setCurrentUser(null);
+                        router.push('/login');
+                    } else {
+                        await loadProfile(session?.user ?? null);
+                    }
+                    setIsLoading(false);
+                }, 0);
             }
         );
 
