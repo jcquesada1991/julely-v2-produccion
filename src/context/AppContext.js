@@ -547,21 +547,28 @@ export function AppProvider({ children }) {
                 throw new Error('No hay sesión activa. Por favor inicia sesión de nuevo.');
             }
 
-            const { data, error } = await supabase.functions.invoke('create-user', {
-                body: {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+            const resp = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'apikey': supabaseKey,
+                },
+                body: JSON.stringify({
                     email: newUser.email,
                     password: newUser.password || 'Julely2024!',
                     full_name: `${newUser.name} ${newUser.surname || ''}`.trim(),
                     role: roleKey,
-                },
-                headers: {
-                    Authorization: `Bearer ${session.access_token}`,
-                },
+                }),
             });
 
-
-            if (error) throw error;
-            if (data?.error) throw new Error(data.error);
+            const result = await resp.json();
+            if (!resp.ok || result.error) {
+                throw new Error(result.error || `Error HTTP ${resp.status}`);
+            }
 
             // Recargar lista de usuarios
             const { data: profilesData } = await supabase
