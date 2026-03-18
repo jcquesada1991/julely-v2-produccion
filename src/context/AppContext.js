@@ -53,7 +53,7 @@ export function AppProvider({ children }) {
     const ensureSession = async () => {
         try {
             // Helper function to manage timeouts for auth checks
-            const withTimeout = (promise, ms = 10000) => {
+            const withTimeout = (promise, ms = 30000) => {
                 return Promise.race([
                     promise,
                     new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexión con el servidor')), ms))
