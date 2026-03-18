@@ -172,7 +172,7 @@ export default function Destinations() {
                     dest={detailDest}
                     onClose={() => setDetailDest(null)}
                     onEdit={(dest) => { setDetailDest(null); handleOpenEdit(dest); }}
-                    onDelete={(id) => { deleteDestination(id); setDetailDest(null); }}
+                    onDelete={async (id) => { await deleteDestination(id); setDetailDest(null); }}
                 />
             )}
         </DashboardLayout>

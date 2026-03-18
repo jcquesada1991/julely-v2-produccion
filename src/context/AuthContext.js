@@ -154,7 +154,7 @@ export function AuthProvider({ children }) {
             timeoutId = setTimeout(() => {
                 // Notificar de alguna manera si quisieras, aquí cerramos sesión directamente
                 logout();
-            }, 30 * 60 * 1000); // 30 minutos
+            }, 60 * 60 * 1000); // 60 minutos
         };
 
         const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];

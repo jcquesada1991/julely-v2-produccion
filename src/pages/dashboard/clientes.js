@@ -37,7 +37,7 @@ export default function Clients() {
             `¿Estás seguro de eliminar a "${name}"? Esta acción no se puede deshacer.`
         );
         if (ok) {
-            deleteClient(id);
+            await deleteClient(id);
         }
     };
 

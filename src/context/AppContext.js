@@ -53,23 +53,33 @@ export function AppProvider({ children }) {
     const ensureSession = async () => {
         try {
             // Helper function to manage timeouts for auth checks
-            const withTimeout = (promise, ms = 8000) => {
+            const withTimeout = (promise, ms = 10000) => {
                 return Promise.race([
                     promise,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de sesión')), ms))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexión con el servidor')), ms))
                 ]);
             };
 
-            const { data: { session } } = await withTimeout(supabase.auth.getSession());
+            // Intentar obtener sesión actual
+            const { data: { session }, error: sessionErr } = await withTimeout(supabase.auth.getSession());
+            
+            if (sessionErr) throw sessionErr;
+
             if (!session) {
-                const { error } = await withTimeout(supabase.auth.refreshSession());
-                if (error) throw error;
+                // Si no hay sesión, intentar refrescarla
+                console.log('No hay sesión activa, intentando refrescar...');
+                const { data: { session: refreshedSession }, error: refreshErr } = await withTimeout(supabase.auth.refreshSession());
+                if (refreshErr || !refreshedSession) {
+                    throw new Error('Tu sesión ha expirado. Por favor, refresca la página (F5) o vuelve a iniciar sesión.');
+                }
+                return true;
             }
             return true;
         } catch (error) {
-            console.warn('La sesión ha expirado o no hay conexión:', error);
-            // Si estuviéramos en un componente podríamos redirigir, por ahora lanzamos error
-            throw new Error('Sesión expirada o sin conexión. Por favor recarga o inicia sesión nuevamente.');
+            console.error('Error en validación de sesión:', error);
+            const msg = error.message || 'Error de conexión';
+            showNotification(msg, 'error');
+            throw error; // Re-lanzar para que el CRUD sepa que falló
         }
     };
 
@@ -384,99 +394,120 @@ export function AppProvider({ children }) {
     // VENTAS / BOOKINGS CRUD
     // ════════════════════════════════════════════════════════════════
     const addSale = async (newSale) => {
-        await ensureSession();
-        const dest = destinations.find(d => String(d.id) === String(newSale.destination_id));
-        const prefix = dest ? dest.title.substring(0, 3).toUpperCase() : 'GEN';
-        const timestamp = Date.now().toString().slice(-3);
-        const voucherCode = `VOU-${prefix}-${timestamp}`;
-        const today = new Date().toISOString().split('T')[0];
+        try {
+            await ensureSession();
+            const dest = destinations.find(d => String(d.id) === String(newSale.destination_id));
+            const prefix = dest ? dest.title.substring(0, 3).toUpperCase() : 'GEN';
+            const timestamp = Date.now().toString().slice(-3);
+            const voucherCode = `VOU-${prefix}-${timestamp}`;
+            const today = new Date().toISOString().split('T')[0];
 
-        const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase.auth.getUser();
 
-        const { data, error } = await supabase
-            .from('bookings')
-            .insert([{
-                voucher_code: voucherCode,
-                destination_id: newSale.destination_id || null,
-                destination_name: dest ? dest.title : 'Desconocido',
-                client_id: newSale.client_id || null,
-                assigned_to: user?.id || null,
-                client_name: newSale.client_name,
-                num_adults: newSale.num_adults || 1,
-                num_children: newSale.num_children || 0,
-                total_amount: parseFloat(newSale.total_amount) || 0,
-                amount_paid: parseFloat(newSale.amount_paid) || 0,
-                currency: newSale.currency || 'USD',
-                travel_date: newSale.travel_date || null,
-                return_date: newSale.return_date || null,
-                booking_date: newSale.booking_date || today,
-                emission_date: today,
-                status: 'confirmada',
-                hotel_info: {
-                    ...(newSale.hotel_info || {}),
-                    show_price_on_voucher: newSale.show_price_on_voucher ?? true
-                },
-                custom_itinerary: newSale.custom_itinerary || [],
-                custom_includes: newSale.custom_includes || [],
-                prepared_by: newSale.prepared_by || null,
-            }])
-            .select()
-            .single();
+            const { data, error } = await supabase
+                .from('bookings')
+                .insert([{
+                    voucher_code: voucherCode,
+                    destination_id: newSale.destination_id || null,
+                    destination_name: dest ? dest.title : 'Desconocido',
+                    client_id: newSale.client_id || null,
+                    assigned_to: user?.id || null,
+                    client_name: newSale.client_name,
+                    num_adults: newSale.num_adults || 1,
+                    num_children: newSale.num_children || 0,
+                    total_amount: parseFloat(newSale.total_amount) || 0,
+                    amount_paid: parseFloat(newSale.amount_paid) || 0,
+                    currency: newSale.currency || 'USD',
+                    travel_date: newSale.travel_date || null,
+                    return_date: newSale.return_date || null,
+                    booking_date: newSale.booking_date || today,
+                    emission_date: today,
+                    status: 'confirmada',
+                    hotel_info: {
+                        ...(newSale.hotel_info || {}),
+                        show_price_on_voucher: newSale.show_price_on_voucher ?? true
+                    },
+                    custom_itinerary: newSale.custom_itinerary || [],
+                    custom_includes: newSale.custom_includes || [],
+                    prepared_by: newSale.prepared_by || null,
+                }])
+                .select()
+                .single();
 
-        if (error) { showNotification('Error al registrar venta', 'error'); console.error(error); return; }
-        setSales(prev => {
-            const exists = prev.find(s => String(s.id) === String(data.id));
-            if (exists) {
-                return prev.map(s => String(s.id) === String(data.id) ? { ...s, ...normalizeBooking(data) } : s);
+            if (error) throw error;
+
+            setSales(prev => {
+                const exists = prev.find(s => String(s.id) === String(data.id));
+                if (exists) {
+                    return prev.map(s => String(s.id) === String(data.id) ? { ...s, ...normalizeBooking(data) } : s);
+                }
+                return [normalizeBooking(data), ...prev];
+            });
+            showNotification('Venta registrada exitosamente');
+            await loadAll(true);
+            return true;
+        } catch (err) {
+            console.error('Error al registrar venta:', err);
+            // Si el error ya fue mostrado por ensureSession, no repetimos
+            if (!err.message.includes('sesión')) {
+                showNotification('Error al registrar la venta. Intenta de nuevo.', 'error');
             }
-            return [normalizeBooking(data), ...prev];
-        });
-        showNotification('Venta registrada exitosamente');
-        await loadAll(true);
+            return false;
+        }
     };
 
     const updateSale = async (id, updatedFields) => {
-        await ensureSession();
-        const { data, error } = await supabase
-            .from('bookings')
-            .update(updatedFields)
-            .eq('id', id)
-            .select()
-            .single();
+        try {
+            await ensureSession();
+            const { data, error } = await supabase
+                .from('bookings')
+                .update(updatedFields)
+                .eq('id', id)
+                .select()
+                .single();
 
-        if (error) {
-            console.error('Error al actualizar venta:', error);
-            showNotification('Error al actualizar venta: ' + (error.message || 'Intenta de nuevo'), 'error');
+            if (error) throw error;
+
+            setSales(prev => {
+                const exists = prev.find(s => String(s.id) === String(id));
+                if (exists) {
+                    return prev.map(s => String(s.id) === String(id) ? normalizeBooking({ ...s, ...data }) : s);
+                }
+                return [normalizeBooking(data), ...prev];
+            });
+            showNotification('Voucher guardado correctamente');
+            await loadAll(true);
+            return data;
+        } catch (err) {
+            console.error('Error al actualizar venta:', err);
+            if (!err.message.includes('sesión')) {
+                showNotification('Error al actualizar venta. Intenta de nuevo.', 'error');
+            }
             return null;
         }
-
-        setSales(prev => {
-            const exists = prev.find(s => String(s.id) === String(id));
-            if (exists) {
-                return prev.map(s => String(s.id) === String(id) ? normalizeBooking({ ...s, ...data }) : s);
-            }
-            return [normalizeBooking(data), ...prev];
-        });
-        showNotification('Voucher guardado correctamente');
-        await loadAll(true);
-        return data;
     };
 
     const deleteSale = async (id) => {
-        await ensureSession();
-        const { data, error } = await supabase.from('bookings').delete().eq('id', id).select();
-        if (error) {
+        try {
+            await ensureSession();
+            const { data, error } = await supabase.from('bookings').delete().eq('id', id).select();
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showNotification('No se pudo eliminar la venta (Verifique permisos)', 'error');
+                return false;
+            }
+            setSales(prev => prev.filter(s => String(s.id) !== String(id)));
+            showNotification('Venta eliminada', 'info');
+            await loadAll(true);
+            return true;
+        } catch (error) {
             console.error('Error al eliminar venta:', error);
-            showNotification('Error al eliminar venta: ' + (error.message || 'Intenta de nuevo'), 'error');
-            return;
+            if (!error.message.includes('sesión')) {
+                showNotification('Error al eliminar venta: ' + (error.message || 'Intenta de nuevo'), 'error');
+            }
+            return false;
         }
-        if (!data || data.length === 0) {
-            showNotification('No se pudo eliminar la venta (Verifique permisos)', 'error');
-            return;
-        }
-        setSales(prev => prev.filter(s => String(s.id) !== String(id)));
-        showNotification('Venta eliminada', 'info');
-        await loadAll(true);
     };
 
     const getSaleDetails = (saleId) => {
@@ -624,27 +655,32 @@ export function AppProvider({ children }) {
     };
 
     const deleteUser = async (id) => {
-        await ensureSession();
-        // Nota: Esto solo elimina el perfil, el usuario en auth.users requiere permisos de Admin API.
-        const { data, error } = await supabase.from('profiles').delete().eq('id', id).select();
-        if (error) {
+        try {
+            await ensureSession();
+            // Nota: Esto solo elimina el perfil, el usuario en auth.users requiere permisos de Admin API.
+            const { data, error } = await supabase.from('profiles').delete().eq('id', id).select();
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showNotification('No se pudo eliminar el usuario (Verifique permisos)', 'error');
+                return false;
+            }
+            setUsers(prev => prev.filter(u => String(u.id) !== String(id)));
+            showNotification('Usuario eliminado', 'info');
+            await loadAll(true);
+            return true;
+        } catch (error) {
             console.error('Error al eliminar usuario:', error);
-            showNotification(
-                error.code === '23503'
-                    ? 'No se puede eliminar: el usuario tiene registros vinculados'
-                    : 'Error al eliminar usuario: ' + (error.message || 'Intenta de nuevo'),
-                'error'
-            );
+            if (!error.message.includes('sesión')) {
+                showNotification(
+                    error.code === '23503'
+                        ? 'No se puede eliminar: el usuario tiene registros vinculados'
+                        : 'Error al eliminar usuario: ' + (error.message || 'Intenta de nuevo'),
+                    'error'
+                );
+            }
             return false;
         }
-        if (!data || data.length === 0) {
-            showNotification('No se pudo eliminar el usuario (Verifique permisos)', 'error');
-            return false;
-        }
-        setUsers(prev => prev.filter(u => String(u.id) !== String(id)));
-        showNotification('Usuario eliminado', 'info');
-        await loadAll(true);
-        return true;
     };
 
     // ════════════════════════════════════════════════════════════════
@@ -740,102 +776,132 @@ export function AppProvider({ children }) {
     };
 
     const deleteClient = async (id) => {
-        await ensureSession();
-        const { data, error } = await supabase.from('clients').delete().eq('id', id).select();
-        if (error) {
+        try {
+            await ensureSession();
+            const { data, error } = await supabase.from('clients').delete().eq('id', id).select();
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showNotification('No se pudo eliminar el cliente (Verifique permisos)', 'error');
+                return false;
+            }
+            setClients(prev => prev.filter(c => String(c.id) !== String(id)));
+            showNotification('Cliente eliminado', 'info');
+            await loadAll(true);
+            return true;
+        } catch (error) {
             console.error('Error al eliminar cliente:', error);
-            showNotification(
-                error.code === '23503'
-                    ? 'No se puede eliminar: el cliente tiene ventas vinculadas'
-                    : 'Error al eliminar cliente: ' + (error.message || 'Intenta de nuevo'),
-                'error'
-            );
-            return;
+            if (!error.message.includes('sesión')) {
+                showNotification(
+                    error.code === '23503'
+                        ? 'No se puede eliminar: el cliente tiene ventas vinculadas'
+                        : 'Error al eliminar cliente: ' + (error.message || 'Intenta de nuevo'),
+                    'error'
+                );
+            }
+            return false;
         }
-        if (!data || data.length === 0) {
-            showNotification('No se pudo eliminar el cliente (Verifique permisos)', 'error');
-            return;
-        }
-        setClients(prev => prev.filter(c => String(c.id) !== String(id)));
-        showNotification('Cliente eliminado', 'info');
-        await loadAll(true);
     };
 
     // ════════════════════════════════════════════════════════════════
     // ITINERARIOS / ACTIVIDADES CRUD
     // ════════════════════════════════════════════════════════════════
     const addItinerary = async (newItinerary) => {
-        await ensureSession();
-        const dest = destinations.find(d => String(d.id) === String(newItinerary.destination_id));
-        const { data, error } = await supabase
-            .from('activities')
-            .insert([{
-                destination_id: newItinerary.destination_id || null,
-                destination_name: dest ? dest.title : 'Desconocido',
-                name: newItinerary.name,
-                description: newItinerary.description,
-                price_adult: parseFloat(newItinerary.price_adult) || 0,
-                price_child: parseFloat(newItinerary.price_child) || 0,
-                image_url: newItinerary.image || '',
-                is_active: true,
-            }])
-            .select().single();
+        try {
+            await ensureSession();
+            const dest = destinations.find(d => String(d.id) === String(newItinerary.destination_id));
+            const { data, error } = await supabase
+                .from('activities')
+                .insert([{
+                    destination_id: newItinerary.destination_id || null,
+                    destination_name: dest ? dest.title : 'Desconocido',
+                    name: newItinerary.name,
+                    description: newItinerary.description,
+                    price_adult: parseFloat(newItinerary.price_adult) || 0,
+                    price_child: parseFloat(newItinerary.price_child) || 0,
+                    image_url: newItinerary.image || '',
+                    is_active: true,
+                }])
+                .select().single();
 
-        if (error) { showNotification('Error al crear excursión', 'error'); console.error(error); return; }
-        setItineraries(prev => {
-            const exists = prev.find(i => String(i.id) === String(data.id));
-            if (exists) {
-                return prev.map(i => String(i.id) === String(data.id) ? { ...i, ...data, image: data.image_url } : i);
+            if (error) throw error;
+            setItineraries(prev => {
+                const exists = prev.find(i => String(i.id) === String(data.id));
+                if (exists) {
+                    return prev.map(i => String(i.id) === String(data.id) ? { ...i, ...data, image: data.image_url } : i);
+                }
+                return [{ ...data, image: data.image_url }, ...prev];
+            });
+            showNotification('Excursión creada correctamente');
+            await loadAll(true);
+            return true;
+        } catch (error) {
+            console.error('Error al crear excursión:', error);
+            if (!error.message.includes('sesión')) {
+                showNotification('Error al crear excursión: ' + (error.message || 'Intenta de nuevo'), 'error');
             }
-            return [{ ...data, image: data.image_url }, ...prev];
-        });
-        showNotification('Excursión creada correctamente');
-        await loadAll(true);
+            return false;
+        }
     };
 
     const updateItinerary = async (id, updatedItinerary) => {
-        await ensureSession();
-        const dest = destinations.find(d => String(d.id) === String(updatedItinerary.destination_id));
-        const { data, error } = await supabase
-            .from('activities')
-            .update({
-                destination_id: updatedItinerary.destination_id || null,
-                destination_name: dest ? dest.title : 'Desconocido',
-                name: updatedItinerary.name,
-                description: updatedItinerary.description,
-                price_adult: parseFloat(updatedItinerary.price_adult) || 0,
-                price_child: parseFloat(updatedItinerary.price_child) || 0,
-                image_url: updatedItinerary.image || '',
-            })
-            .eq('id', id).select().single();
+        try {
+            await ensureSession();
+            const dest = destinations.find(d => String(d.id) === String(updatedItinerary.destination_id));
+            const { data, error } = await supabase
+                .from('activities')
+                .update({
+                    destination_id: updatedItinerary.destination_id || null,
+                    destination_name: dest ? dest.title : 'Desconocido',
+                    name: updatedItinerary.name,
+                    description: updatedItinerary.description,
+                    price_adult: parseFloat(updatedItinerary.price_adult) || 0,
+                    price_child: parseFloat(updatedItinerary.price_child) || 0,
+                    image_url: updatedItinerary.image || '',
+                })
+                .eq('id', id).select().single();
 
-        if (error) { showNotification('Error al actualizar excursión', 'error'); return; }
-        setItineraries(prev => {
-            const exists = prev.find(i => String(i.id) === String(id));
-            if (exists) {
-                return prev.map(i => String(i.id) === String(id) ? { ...i, ...data, image: data.image_url } : i);
+            if (error) throw error;
+            setItineraries(prev => {
+                const exists = prev.find(i => String(i.id) === String(id));
+                if (exists) {
+                    return prev.map(i => String(i.id) === String(id) ? { ...i, ...data, image: data.image_url } : i);
+                }
+                return [{ ...data, image: data.image_url }, ...prev];
+            });
+            showNotification('Excursión actualizada correctamente');
+            await loadAll(true);
+            return true;
+        } catch (error) {
+            console.error('Error al actualizar excursión:', error);
+            if (!error.message.includes('sesión')) {
+                showNotification('Error al actualizar excursión: ' + (error.message || 'Intenta de nuevo'), 'error');
             }
-            return [{ ...data, image: data.image_url }, ...prev];
-        });
-        showNotification('Excursión actualizada correctamente');
-        await loadAll(true);
+            return false;
+        }
     };
 
     const deleteItinerary = async (id) => {
-        await ensureSession();
-        const { data, error } = await supabase.from('activities').delete().eq('id', id).select();
-        if (error) {
+        try {
+            await ensureSession();
+            const { data, error } = await supabase.from('activities').delete().eq('id', id).select();
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showNotification('No se pudo eliminar la excursión (Verifique permisos)', 'error');
+                return false;
+            }
+            setItineraries(prev => prev.filter(i => String(i.id) !== String(id)));
+            showNotification('Excursión eliminada', 'info');
+            await loadAll(true);
+            return true;
+        } catch (error) {
             console.error('Error al eliminar excursión:', error);
-            showNotification('Error al eliminar excursión: ' + (error.message || 'Intenta de nuevo'), 'error');
-            return;
+            if (!error.message.includes('sesión')) {
+                showNotification('Error al eliminar excursión: ' + (error.message || 'Intenta de nuevo'), 'error');
+            }
+            return false;
         }
-        if (!data || data.length === 0) {
-            showNotification('No se pudo eliminar la excursión (Verifique permisos)', 'error');
-            return;
-        }
-        setItineraries(prev => prev.filter(i => String(i.id) !== String(id)));
-        showNotification('Excursión eliminada', 'info');
-        await loadAll(true);
     };
 
     // ════════════════════════════════════════════════════════════════

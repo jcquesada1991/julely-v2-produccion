@@ -19,13 +19,15 @@ export default function Sales() {
     const [viewingItinerary, setViewingItinerary] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleAddSale = (formData) => {
+    const handleAddSale = async (formData) => {
         // Attach the creator's user ID to the sale
-        addSale({
+        const success = await addSale({
             ...formData,
             created_by: currentUser?.id || null
         });
-        setIsModalOpen(false);
+        if (success) {
+            setIsModalOpen(false);
+        }
     };
 
     const getDestinationName = (sale) => {
@@ -212,7 +214,7 @@ export default function Sales() {
                                                         `¿Estás seguro de eliminar esta venta? Esta acción no se puede deshacer.`
                                                     );
                                                     if (ok) {
-                                                        deleteSale(sale.id);
+                                                        await deleteSale(sale.id);
                                                     }
                                                 }}
                                             >
