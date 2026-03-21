@@ -12,7 +12,7 @@ import { useConfirm } from '@/components/ConfirmModal';
 
 export default function Sales() {
     const router = useRouter();
-    const { sales, destinations, addSale, deleteSale } = useApp();
+    const { sales, destinations, addSale, deleteSale, loadMoreSales, hasMoreSales } = useApp();
     const { currentUser, can } = useAuth();
     const confirm = useConfirm();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -224,9 +224,32 @@ export default function Sales() {
                                     </td>
                                 </tr>
                             ))}
+                            {displayedSales.length > 0 && hasMoreSales && !searchTerm && (
+                                <tr>
+                                    <td colSpan={can('canViewFinancials') ? 7 : 6} style={{ textAlign: 'center', padding: '1.5rem' }}>
+                                        <button
+                                            style={{
+                                                padding: '0.6rem 1.2rem',
+                                                background: 'transparent',
+                                                color: 'var(--primary-color)',
+                                                border: '1px solid var(--primary-color)',
+                                                borderRadius: '6px',
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onClick={loadMoreSales}
+                                            onMouseOver={e => { e.target.style.background = 'rgba(157, 116, 200, 0.1)'; }}
+                                            onMouseOut={e => { e.target.style.background = 'transparent'; }}
+                                        >
+                                            Cargar Más Ventas Antiguas...
+                                        </button>
+                                    </td>
+                                </tr>
+                            )}
                             {displayedSales.length === 0 && (
                                 <tr>
-                                    <td colSpan={can('canViewFinancials') ? 8 : 7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                                    <td colSpan={can('canViewFinancials') ? 7 : 6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                                         {searchTerm ? 'No se encontraron ventas con ese criterio.' : 'No hay ventas registradas.'}
                                     </td>
                                 </tr>

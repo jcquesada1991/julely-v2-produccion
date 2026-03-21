@@ -10,14 +10,24 @@ export function AppProvider({ children }) {
     // ─── STATE ────────────────────────────────────────────────────────
     const [destinations, setDestinations] = useState([]);
     const [sales, setSales] = useState([]);
+    const [salesPage, setSalesPage] = useState(0);
+    const [hasMoreSales, setHasMoreSales] = useState(true);
+
     const [users, setUsers] = useState([]);
+    
     const [clients, setClients] = useState([]);
+    const [clientsPage, setClientsPage] = useState(0);
+    const [hasMoreClients, setHasMoreClients] = useState(true);
+    
+    const PAGE_SIZE = 200;
     const [itineraries, setItineraries] = useState([]);
     const [systemSettings, setSystemSettings] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
     // Ref para las imágenes de destinos (para que el realtime las use)
     const destImagesRef = useRef({});
+    const isLoadingMoreSalesRef = useRef(false);
+    const isLoadingMoreClientsRef = useRef(false);
 
     // ─── HELPERS DE NORMALIZACIÓN ─────────────────────────────────────
     const normalizeBooking = useCallback((s) => ({
@@ -69,13 +79,7 @@ export function AppProvider({ children }) {
             if (sessionErr) throw sessionErr;
 
             if (!session) {
-                // Si no hay sesión, intentar refrescarla
-                console.log('No hay sesión activa, intentando refrescar...');
-                const { data: { session: refreshedSession }, error: refreshErr } = await withTimeout(supabase.auth.refreshSession());
-                if (refreshErr || !refreshedSession) {
-                    throw new Error('Tu sesión ha expirado. Por favor, refresca la página (F5) o vuelve a iniciar sesión.');
-                }
-                return true;
+                throw new Error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
             }
             return true;
         } catch (error) {
@@ -99,12 +103,12 @@ export function AppProvider({ children }) {
                 { data: destImgData, error: destImgErr },
                 { data: settingsData, error: settingsErr },
             ] = await Promise.all([
-                supabase.from('destinations').select('*').order('created_at', { ascending: false }),
-                supabase.from('bookings').select('*').order('created_at', { ascending: false }),
-                supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+                supabase.from('destinations').select('*').order('created_at', { ascending: false }).limit(200),
+                supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(200),
+                supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(100),
                 // JOIN con client_identity para traer nationality
-                supabase.from('clients').select('*, client_identity(nationality)').order('created_at', { ascending: false }),
-                supabase.from('activities').select('*').order('created_at', { ascending: false }),
+                supabase.from('clients').select('*, client_identity(nationality)').order('created_at', { ascending: false }).limit(200),
+                supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('destination_images').select('*').order('display_order', { ascending: true }),
                 supabase.from('settings').select('*'),
             ]);
@@ -136,11 +140,15 @@ export function AppProvider({ children }) {
 
             // Normalize bookings
             setSales((salesData || []).map(normalizeBooking));
+            setSalesPage(0);
+            setHasMoreSales(salesData?.length === 200);
 
             // Normalize profiles
             setUsers((usersData || []).map(normalizeProfile));
 
             // Normalize clients — aplanar client_identity al nivel raíz
+            setClientsPage(0);
+            setHasMoreClients(clientsData?.length === 200);
             setClients((clientsData || []).map(c => {
                 const identity = Array.isArray(c.client_identity) ? c.client_identity[0] : c.client_identity;
                 return {
@@ -274,6 +282,60 @@ export function AppProvider({ children }) {
             supabase.removeChannel(profilesChannel);
         };
     }, [normalizeBooking, normalizeProfile, normalizeDestination]);
+
+    // ─── LOAD MORE FUNCTIONS ──────────────────────────────────────────
+    const loadMoreSales = async () => {
+        if (!hasMoreSales || isLoadingMoreSalesRef.current) return;
+        isLoadingMoreSalesRef.current = true;
+        try {
+            const nextOffset = (salesPage + 1) * PAGE_SIZE;
+            const { data, error } = await supabase
+                .from('bookings')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .range(nextOffset, nextOffset + PAGE_SIZE - 1);
+
+            if (error) { console.error('Error loadMoreSales:', error); return; }
+            if (data.length < PAGE_SIZE) setHasMoreSales(false);
+
+            setSales(prev => {
+                const newItems = data.filter(d => !prev.find(p => String(p.id) === String(d.id))).map(normalizeBooking);
+                return [...prev, ...newItems];
+            });
+            setSalesPage(prev => prev + 1);
+        } catch (err) { console.error('Error loadMoreSales:', err); }
+        finally { isLoadingMoreSalesRef.current = false; }
+    };
+
+    const loadMoreClients = async () => {
+        if (!hasMoreClients || isLoadingMoreClientsRef.current) return;
+        isLoadingMoreClientsRef.current = true;
+        try {
+            const nextOffset = (clientsPage + 1) * PAGE_SIZE;
+            const { data, error } = await supabase
+                .from('clients')
+                .select('*, client_identity(nationality)')
+                .order('created_at', { ascending: false })
+                .range(nextOffset, nextOffset + PAGE_SIZE - 1);
+
+            if (error) { console.error('Error loadMoreClients:', error); return; }
+            if (data.length < PAGE_SIZE) setHasMoreClients(false);
+
+            setClients(prev => {
+                const newItems = data.filter(d => !prev.find(p => String(p.id) === String(d.id))).map(c => {
+                    const identity = Array.isArray(c.client_identity) ? c.client_identity[0] : c.client_identity;
+                    return {
+                        ...c,
+                        nationality: identity?.nationality || c.nationality || '',
+                        registration_date: c.booking_date || '',
+                    };
+                });
+                return [...prev, ...newItems];
+            });
+            setClientsPage(prev => prev + 1);
+        } catch (err) { console.error('Error loadMoreClients:', err); }
+        finally { isLoadingMoreClientsRef.current = false; }
+    };
 
     // ════════════════════════════════════════════════════════════════
     // DESTINOS CRUD
@@ -973,6 +1035,8 @@ export function AppProvider({ children }) {
     return (
         <AppContext.Provider value={{
             destinations, sales, users, clients, itineraries, systemSettings, isLoading, stats,
+            loadMoreSales, hasMoreSales,
+            loadMoreClients, hasMoreClients,
             addDestination, updateDestination, deleteDestination,
             addDestinationImages, deleteDestinationImage,
             addSale, updateSale, deleteSale, getSaleDetails,
