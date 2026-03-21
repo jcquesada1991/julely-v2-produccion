@@ -52,9 +52,9 @@ export default function DashboardLayout({ children, title }) {
     // Build menu items based on permissions
     const menuItems = [
         { icon: LayoutGrid, label: 'Dashboard', path: '/dashboard', show: true },
-        { icon: User, label: 'Clientes', path: '/dashboard/clientes', show: true },
         { icon: Briefcase, label: 'Destinos', path: '/dashboard/destinos', show: true },
         { icon: Map, label: 'Excursiones', path: '/dashboard/itinerarios', show: true },
+        { icon: User, label: 'Clientes', path: '/dashboard/clientes', show: true },
         { icon: Calendar, label: 'Ventas', path: '/dashboard/ventas', show: true },
         { icon: Users, label: 'Usuarios', path: '/dashboard/usuarios', show: can('canManageUsers') },
         { icon: Shield, label: 'Configuración', path: '/dashboard/configuracion', show: can('canManageUsers') },
