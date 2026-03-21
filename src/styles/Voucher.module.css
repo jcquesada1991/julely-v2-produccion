@@ -685,6 +685,24 @@
     color: #1e293b;
 }
 
+/* Watermark — aparece en todas las páginas via ::before */
+.voucherPage::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: 65%;
+    height: 220px;
+    background-image: url('/images/logo_transparent.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.10;
+    pointer-events: none;
+    z-index: 0;
+}
+
 /* Sticky Print Signature */
 .printSignature {
     display: none;
