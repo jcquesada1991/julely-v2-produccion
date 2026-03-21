@@ -381,10 +381,10 @@
 /* Section Blocks for Page 2, 3, etc. */
 .mainContent {
     flex: 1;
-    padding: 3rem 2.5rem 2rem 2.5rem;
+    padding: 2rem 2.5rem 1.5rem 2.5rem;
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 1.5rem;
 }
 
 .sectionBlock {
@@ -470,14 +470,14 @@
 .itineraryList {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .itineraryItem {
     display: flex;
     gap: 1.5rem;
     break-inside: avoid;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid #f1f5f9;
 }
 
@@ -520,15 +520,16 @@
 
 .itineraryImageWrapper {
     width: 100%;
-    height: 220px;
     border-radius: 12px;
     overflow: hidden;
 }
 
 .itineraryImageWrapper img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: 160px;
+    object-fit: contain;
+    display: block;
 }
 
 /* Terms & Footer Note */

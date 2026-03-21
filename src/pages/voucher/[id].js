@@ -186,7 +186,27 @@ export default function Voucher() {
     };
 
     // Chunk itinerary items
-    const itineraryPages = editItinerary.length > 0 ? chunkArray(editItinerary, 3) : [[]];
+    // Chunking adaptativo: 2 por página si algún ítem tiene imagen o descripción larga, 3 si son cortos
+    const buildItineraryPages = (items) => {
+        if (items.length === 0) return [[]];
+        const isBig = (item) => item && (!!item.image || (item.description || '').length > 200);
+        const pages = [];
+        let i = 0;
+        while (i < items.length) {
+            const a = items[i];
+            const b = i + 1 < items.length ? items[i + 1] : null;
+            const c = i + 2 < items.length ? items[i + 2] : null;
+            if (!isBig(a) && b && !isBig(b) && c) {
+                pages.push([a, b, c]);
+                i += 3;
+            } else {
+                pages.push(b ? [a, b] : [a]);
+                i += b ? 2 : 1;
+            }
+        }
+        return pages;
+    };
+    const itineraryPages = buildItineraryPages(editItinerary);
 
     const { destination: dest, voucher_code } = data;
 
@@ -521,11 +541,6 @@ export default function Voucher() {
                                     )}
                                 </div>
                             ))}
-                            <div className={styles.extraInfoItem}>
-                                <div className={styles.extraIcon}><Users size={20} /></div>
-                                <div className={styles.extraLabel}>PREPARADO POR</div>
-                                <div className={styles.extraVal}>{editPreparedBy || "-"}</div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -648,7 +663,7 @@ export default function Voucher() {
                                 )}
                                 <div className={styles.itineraryList}>
                                     {pageItems.map((item, idxInPage) => {
-                                        const idx = (pageIdx * 3) + idxInPage;
+                                        const idx = editItinerary.indexOf(item);
                                         return (
                                             <div key={idx} className={styles.itineraryItem}>
                                                 <div className={styles.dayBadge}>DÍA {item.day || idx + 1}</div>
