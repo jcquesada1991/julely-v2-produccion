@@ -17,6 +17,7 @@ export default function SaleForm({ onSubmit, onCancel }) {
         travelers: 1,
         show_price_on_voucher: true,
         travel_date: '',
+        return_date: '',
         hotel_name: '',
         hotel_address: '',
         hotel_phone: '',
@@ -123,6 +124,7 @@ export default function SaleForm({ onSubmit, onCancel }) {
             num_children: 0,
             show_price_on_voucher: formData.show_price_on_voucher,
             travel_date: formData.travel_date || null,
+            return_date: formData.return_date || null,
             assigned_to: formData.seller_id || null, // Vendedor
             hotel_info: {
                 hotel_name: formData.hotel_name || '',
@@ -287,7 +289,7 @@ export default function SaleForm({ onSubmit, onCancel }) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
-                        <label style={labelStyle}>Fecha de Viaje</label>
+                        <label style={labelStyle}>Fecha de Salida (Ida)</label>
                         <input
                             type="date"
                             value={formData.travel_date || ''}
@@ -295,6 +297,18 @@ export default function SaleForm({ onSubmit, onCancel }) {
                             style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }}
                         />
                     </div>
+                    <div>
+                        <label style={labelStyle}>Fecha de Regreso (Vuelta)</label>
+                        <input
+                            type="date"
+                            value={formData.return_date || ''}
+                            onChange={(e) => setFormData({ ...formData, return_date: e.target.value })}
+                            style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
                     <div>
                         <label style={labelStyle}>Nombre del Hotel</label>
                         <input
@@ -305,9 +319,6 @@ export default function SaleForm({ onSubmit, onCancel }) {
                             style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }}
                         />
                     </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
                     <div>
                         <label style={{ ...labelStyle, marginTop: 0 }}>Dirección del Hotel</label>
                         <input

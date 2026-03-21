@@ -36,6 +36,7 @@ export default function Voucher() {
 
     // New fields requested
     const [editTravelDate, setEditTravelDate] = useState('');
+    const [editReturnDate, setEditReturnDate] = useState('');
     const [editAdults, setEditAdults] = useState(1);
     const [editChildren, setEditChildren] = useState(0);
     const [editHotel, setEditHotel] = useState('');
@@ -71,6 +72,7 @@ export default function Voucher() {
             setEditPrice(data.total_amount ? String(data.total_amount) : '0');
             setEditDate(data.date || new Date().toISOString().split('T')[0]);
             setEditTravelDate(data.travel_date || '');
+            setEditReturnDate(data.return_date || '');
 
             const hotelInfo = data.hotel_info || {};
             const overrides = hotelInfo.client_overrides || {};
@@ -332,6 +334,7 @@ export default function Voucher() {
                 num_adults: editAdults,
                 num_children: editChildren,
                 travel_date: editTravelDate || data.travel_date,
+                return_date: editReturnDate || data.return_date,
                 custom_itinerary: editItinerary.length > 0 ? editItinerary : data.custom_itinerary,
                 custom_includes: editChecklist,
                 prepared_by: editPreparedBy || data.prepared_by,
@@ -465,7 +468,7 @@ export default function Voucher() {
                                     <h3>Itinerario de Viaje</h3>
                                 </div>
                                 <div className={styles.scheduleRow}>
-                                    <span className={styles.scheduleLabel}>Fechas del Viaje</span>
+                                    <span className={styles.scheduleLabel}>Fecha de Salida</span>
                                     <span className={styles.scheduleVal}>
                                         {isEditing ? (
                                             <input
@@ -477,6 +480,23 @@ export default function Voucher() {
                                         ) : (
                                             editTravelDate
                                                 ? new Date(`${editTravelDate}T12:00:00`).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                                : "-"
+                                        )}
+                                    </span>
+                                </div>
+                                <div className={styles.scheduleRow} style={{ marginTop: '0.25rem' }}>
+                                    <span className={styles.scheduleLabel}>Fecha de Regreso</span>
+                                    <span className={styles.scheduleVal}>
+                                        {isEditing ? (
+                                            <input
+                                                type="date"
+                                                className={styles.editInput}
+                                                value={editReturnDate}
+                                                onChange={(e) => setEditReturnDate(e.target.value)}
+                                            />
+                                        ) : (
+                                            editReturnDate
+                                                ? new Date(`${editReturnDate}T12:00:00`).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
                                                 : "-"
                                         )}
                                     </span>
