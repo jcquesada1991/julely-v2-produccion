@@ -4,11 +4,10 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--bg-main);
-    background-image: url('/images/login_bg_v2.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    width: 100%;
+    /* El background vive en body (globals.css) para garantizar cobertura total del viewport.
+       Este container solo aporta el overlay semitransparente via ::before */
+    background-color: transparent;
     position: relative;
     z-index: 0;
 }
@@ -23,30 +22,21 @@
     z-index: -1;
 }
 
-.mainContent {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 1rem 3rem 3rem 3rem;
-    max-width: 1800px;
-    margin: 0 auto;
-    width: 100%;
-}
-
 /* --- Top Navigation --- */
 .topNav {
-    height: 155px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 3rem;
+    padding: 0 2rem;
     background: rgba(255, 255, 255, 0.6);
-    /* Glass effect base */
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 100;
+    /* sin overflow:hidden para que el dropdown "Más" pueda sobresalir */
 }
 
 .brand {
@@ -68,13 +58,18 @@
 }
 
 .navLogoImg {
-    height: 145px;
+    height: 54px;
+    width: auto;
+    max-width: 160px;
     object-fit: contain;
 }
 
-
-
-/* ... existing code ... */
+.navHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0; /* el logo no se comprime */
+}
 
 .mobileMenuBtn {
     display: none;
@@ -92,25 +87,30 @@
 }
 
 .navLinks {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-left: 3rem;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+    position: relative; /* anchor para el measureContainer absoluto */
 }
 
 .navItem {
-    padding: 0.6rem 1.25rem;
+    padding: 0.45rem 0.85rem;
     border-radius: 50px;
     text-decoration: none;
     color: var(--text-secondary);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 4px;
     line-height: 1;
     border: 1px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0; /* cada item mantiene su tamaño natural */
 }
 
 .navItem:hover {
@@ -757,25 +757,107 @@
         gap: 1.5rem;
     }
 
-    .topNav {
-        padding: 0 1.5rem;
-    }
-
     .mainContent {
         padding: 1rem 1.5rem 3rem 1.5rem;
     }
 }
 
-/* Navigation collapses to hamburger when items overflow (~1250px) */
-@media (max-width: 1250px) {
-    /* Mobile Navigation adjustments */
+/* ── Priority+ Navigation: measurement container ── */
+.measureContainer {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    display: flex;
+    gap: 0.5rem;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    z-index: -1;
+}
+
+/* ── Overflow "Más" dropdown ── */
+.moreMenuContainer {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.moreBtn {
+    gap: 5px;
+    cursor: pointer;
+    background: none;
+    border: 1px solid transparent;
+}
+
+.moreDropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-hover);
+    padding: 0.4rem;
+    min-width: 180px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.moreDropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.moreDropdownItem:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--primary-color);
+    border-color: var(--border-color);
+}
+
+.moreDropdownItemActive {
+    background: rgba(157, 116, 200, 0.15);
+    color: var(--primary-color) !important;
+    border-color: rgba(157, 116, 200, 0.3);
+}
+
+/* ── Menú móvil (hamburguesa) ── */
+/* En desktop permanece oculto */
+.mobileMenu {
+    display: none;
+}
+
+.mobileMenuActions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    /* ── Nav móvil ── */
     .topNav {
         height: auto;
         flex-direction: column;
         padding: 0;
         gap: 0;
-        position: sticky;
-        background: var(--bg-main);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
 
     .navHeader {
@@ -783,67 +865,58 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.5rem 1.5rem;
-        background: var(--bg-main);
-        z-index: 101;
-        position: relative;
+        padding: 0.5rem 1.25rem;
     }
 
     .navLogoImg {
-        height: 60px;
+        height: 44px;
+        max-width: 130px;
     }
 
     .mobileMenuBtn {
         display: flex;
     }
 
+    /* Ocultar nav de escritorio en móvil */
     .navLinks {
-        width: 100%;
+        display: none;
+    }
+
+    /* Ocultar acciones de escritorio en móvil */
+    .actions {
+        display: none;
+    }
+
+    /* Menú hamburguesa: animación de expand */
+    .mobileMenu {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        margin: 0;
-        padding: 0;
-        gap: 0.5rem;
+        width: 100%;
         overflow: hidden;
         max-height: 0;
         opacity: 0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        background: var(--bg-main);
+        transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+        background: rgba(255, 255, 255, 0.97);
+        padding: 0 1.25rem;
+        gap: 0.25rem;
     }
 
-    .navLinks.showMenu {
-        max-height: 500px;
+    .mobileMenu.showMenu {
+        max-height: 700px;
         opacity: 1;
-        padding: 0 1.5rem 1.5rem 1.5rem;
+        padding: 0.5rem 1.25rem 1rem 1.25rem;
     }
 
-    .navItem {
+    .mobileMenu .navItem {
         width: 100%;
-        padding: 0.8rem 1rem;
+        padding: 0.75rem 1rem;
         border-radius: 12px;
-        font-size: 1rem;
+        font-size: 0.95rem;
+        white-space: normal;
+        flex-shrink: 1;
     }
 
-    .actions {
-        display: none;
-        width: 100%;
-        justify-content: space-between;
-        padding: 1rem 1.5rem;
-        border-top: 1px solid var(--border-color);
-        background: var(--bg-main);
-        margin-top: 0;
-    }
-
-    .navLinks.showMenu ~ .actions {
-        display: flex;
-    }
-
-    .brandLogo {
-        font-size: 1.25rem;
-    }
-}
-
-@media (max-width: 768px) {
+    /* ── Grid / cards ── */
     .gridContainer {
         grid-template-columns: 1fr;
         gap: 2rem;

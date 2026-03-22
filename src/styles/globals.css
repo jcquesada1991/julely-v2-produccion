@@ -69,11 +69,27 @@
   padding: 0;
 }
 
+html {
+  background-color: var(--bg-main);
+  overflow-x: clip; /* clip no crea scroll container (preserva sticky), hidden sí lo rompe */
+}
+
 body {
   font-family: 'Poppins', sans-serif;
+  /* Background en body = siempre cubre el 100% del viewport sin depender de containers hijos */
   background-color: var(--bg-main);
+  background-image: url('/images/login_bg_v2.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Next.js root: asegurar ancho completo siempre */
+#__next {
+  width: 100%;
   min-height: 100vh;
 }
 
