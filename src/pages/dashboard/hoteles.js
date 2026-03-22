@@ -69,31 +69,30 @@ export default function Hoteles() {
         <DashboardLayout title="Banco de Hoteles | Julely">
             <Head><title>Banco de Hoteles | Julely</title></Head>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h2 className={styles.pageTitle} style={{ fontSize: '2rem' }}>Banco de Hoteles</h2>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{hotels.length} hotel{hotels.length !== 1 ? 'es' : ''} registrado{hotels.length !== 1 ? 's' : ''}</p>
                 </div>
-                {canManage && (
-                    <button className={styles.btnPrimary} onClick={handleNew}>
-                        <Plus size={16} /> Nuevo Hotel
-                    </button>
-                )}
-            </div>
-
-            {/* Search */}
-            <div style={{ marginBottom: '1.5rem' }}>
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre, dirección o categoría..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    style={{ ...inputStyle, maxWidth: '400px' }}
-                />
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, dirección o categoría..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        style={{ ...inputStyle, maxWidth: '300px', background: 'var(--bg-card)' }}
+                    />
+                    {canManage && (
+                        <button className={styles.btnPrimary} onClick={handleNew}>
+                            <Plus size={16} /> Nuevo Hotel
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Table */}
-            <div className={styles.tableWrapper}>
+            <div className={styles.paramountCard}>
+                <div className={styles.tableResponsiveWrapper}>
                 <table className={styles.table}>
                     <thead>
                         <tr>
@@ -154,6 +153,7 @@ export default function Hoteles() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             </div>
 
             {/* Modal */}
