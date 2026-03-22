@@ -172,7 +172,7 @@ export default function Clients() {
                                         )}
                                     </td>
                                     <td>
-                                        <div className={styles.actions} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                             <button
                                                 className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
                                                 data-tooltip="Editar"

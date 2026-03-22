@@ -228,7 +228,7 @@ export default function Usuarios() {
                                         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Activo</span>
                                     </td>
                                     <td>
-                                        <div className={styles.actions} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                             <button
                                                 className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
                                                 data-tooltip="Editar Usuario"
