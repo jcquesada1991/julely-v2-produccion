@@ -21,6 +21,7 @@ export function AppProvider({ children }) {
     
     const PAGE_SIZE = 200;
     const [itineraries, setItineraries] = useState([]);
+    const [hotels, setHotels] = useState([]);
     const [systemSettings, setSystemSettings] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
@@ -102,6 +103,7 @@ export function AppProvider({ children }) {
                 { data: activData, error: activErr },
                 { data: destImgData, error: destImgErr },
                 { data: settingsData, error: settingsErr },
+                { data: hotelsData, error: hotelsErr },
             ] = await Promise.all([
                 supabase.from('destinations').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(200),
@@ -111,6 +113,7 @@ export function AppProvider({ children }) {
                 supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('destination_images').select('*').order('display_order', { ascending: true }),
                 supabase.from('settings').select('*'),
+                supabase.from('hotels').select('*').order('name', { ascending: true }),
             ]);
 
             if (destErr) console.error('Error cargando destinos:', destErr);
@@ -120,6 +123,7 @@ export function AppProvider({ children }) {
             if (activErr) console.error('Error cargando actividades:', activErr);
             if (destImgErr) console.error('Error cargando imágenes de destinos:', destImgErr);
             if (settingsErr) console.error('Error cargando settings:', settingsErr);
+            if (hotelsErr) console.error('Error cargando hoteles:', hotelsErr);
 
             // Agrupar imágenes por destination_id
             const imagesByDest = {};
@@ -169,6 +173,7 @@ export function AppProvider({ children }) {
                 settingsMap[s.key] = s.value;
             });
             setSystemSettings(settingsMap);
+            setHotels(hotelsData || []);
         } catch (err) {
             console.error('Error loading data:', err);
         } finally {
@@ -1015,6 +1020,35 @@ export function AppProvider({ children }) {
         ));
     };
 
+    // ════════════════════════════════════════════════════════════════
+    // HOTELES CRUD
+    // ════════════════════════════════════════════════════════════════
+    const addHotel = async (hotel) => {
+        await ensureSession();
+        const { data, error } = await supabase.from('hotels').insert([hotel]).select().single();
+        if (error) { showNotification('Error al crear hotel', 'error'); throw error; }
+        setHotels(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+        showNotification('Hotel creado exitosamente');
+        return data;
+    };
+
+    const updateHotel = async (id, fields) => {
+        await ensureSession();
+        const { data, error } = await supabase.from('hotels').update(fields).eq('id', id).select().single();
+        if (error) { showNotification('Error al actualizar hotel', 'error'); throw error; }
+        setHotels(prev => prev.map(h => String(h.id) === String(id) ? data : h).sort((a, b) => a.name.localeCompare(b.name)));
+        showNotification('Hotel actualizado');
+        return data;
+    };
+
+    const deleteHotel = async (id) => {
+        await ensureSession();
+        const { error } = await supabase.from('hotels').delete().eq('id', id);
+        if (error) { showNotification('Error al eliminar hotel', 'error'); throw error; }
+        setHotels(prev => prev.filter(h => String(h.id) !== String(id)));
+        showNotification('Hotel eliminado');
+    };
+
     const updateSystemSetting = async (key, value) => {
         await ensureSession();
         const { error } = await supabase.from('settings').upsert({ key, value });
@@ -1034,7 +1068,7 @@ export function AppProvider({ children }) {
 
     return (
         <AppContext.Provider value={{
-            destinations, sales, users, clients, itineraries, systemSettings, isLoading, stats,
+            destinations, sales, users, clients, itineraries, hotels, systemSettings, isLoading, stats,
             loadMoreSales, hasMoreSales,
             loadMoreClients, hasMoreClients,
             addDestination, updateDestination, deleteDestination,
@@ -1043,6 +1077,7 @@ export function AppProvider({ children }) {
             addUser, updateUser, deleteUser,
             addClient, updateClient, deleteClient,
             addItinerary, updateItinerary, deleteItinerary,
+            addHotel, updateHotel, deleteHotel,
             updateSystemSetting,
             refetch: loadAll,
         }}>

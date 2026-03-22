@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styles from '@/styles/DashboardV2.module.css';
-import { LogOut, LayoutGrid, Briefcase, Calendar, Users, Map, User, Menu, X, Shield } from 'lucide-react';
+import { LogOut, LayoutGrid, Briefcase, Calendar, Users, Map, User, Menu, X, Shield, Building } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function DashboardLayout({ children, title }) {
@@ -56,6 +56,7 @@ export default function DashboardLayout({ children, title }) {
         { icon: Map, label: 'Excursiones', path: '/dashboard/itinerarios', show: true },
         { icon: User, label: 'Clientes', path: '/dashboard/clientes', show: true },
         { icon: Calendar, label: 'Ventas', path: '/dashboard/ventas', show: true },
+        { icon: Building, label: 'Hoteles', path: '/dashboard/hoteles', show: can('canManageDestinations') },
         { icon: Users, label: 'Usuarios', path: '/dashboard/usuarios', show: can('canManageUsers') },
         { icon: Shield, label: 'Configuración', path: '/dashboard/configuracion', show: can('canManageUsers') },
     ];
