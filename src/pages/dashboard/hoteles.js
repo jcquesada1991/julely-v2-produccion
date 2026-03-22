@@ -83,7 +83,7 @@ export default function Hoteles() {
                         style={{ ...inputStyle, maxWidth: '300px', background: 'var(--bg-card)' }}
                     />
                     {canManage && (
-                        <button className={styles.btnPrimary} onClick={handleNew}>
+                        <button className="btn-primary" onClick={handleNew}>
                             <Plus size={16} /> Nuevo Hotel
                         </button>
                     )}
@@ -144,8 +144,8 @@ export default function Hoteles() {
                                 {canManage && (
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button className={styles.btnIcon} onClick={() => handleEdit(hotel)} title="Editar"><Edit size={14} /></button>
-                                            <button className={`${styles.btnIcon} ${styles.btnDanger}`} onClick={() => handleDelete(hotel)} title="Eliminar"><Trash2 size={14} /></button>
+                                            <button className={`${styles.actionBtn} ${styles.actionBtnPrimary}`} onClick={() => handleEdit(hotel)} title="Editar"><Edit size={14} /></button>
+                                            <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => handleDelete(hotel)} title="Eliminar"><Trash2 size={14} /></button>
                                         </div>
                                     </td>
                                 )}
@@ -185,8 +185,8 @@ export default function Hoteles() {
                         <label htmlFor="isActive" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>Hotel activo (visible en el selector)</label>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                        <button type="button" className={styles.btnSecondary} onClick={() => setIsModalOpen(false)}>Cancelar</button>
-                        <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                        <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '0.65rem 1.25rem', border: '1px solid var(--border-color)', background: 'transparent', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: 'var(--text-secondary)' }}>Cancelar</button>
+                        <button type="submit" className="btn-primary" disabled={saving}>
                             {saving ? 'Guardando...' : current ? 'Actualizar' : 'Crear Hotel'}
                         </button>
                     </div>
