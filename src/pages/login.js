@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
 import styles from '@/styles/Login.module.css';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Login() {
     const router = useRouter();
+    const { currentUser } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Redirigir al dashboard cuando el perfil ya esté cargado
+    useEffect(() => {
+        if (currentUser) {
+            router.push('/dashboard');
+        }
+    }, [currentUser]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -36,9 +45,7 @@ export default function Login() {
                 setIsLoading(false);
                 return;
             }
-
-            // AuthContext detecta el login via onAuthStateChange
-            router.push('/dashboard');
+            // La navegación la maneja el useEffect cuando AuthContext actualiza currentUser
         } catch (err) {
             console.error('Login error:', err);
             setError('Error de conexión. Intenta de nuevo.');

@@ -109,8 +109,8 @@ export function AppProvider({ children }) {
                 supabase.from('destinations').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(100),
-                // JOIN con client_identity para traer nationality
-                supabase.from('clients').select('*, client_identity(nationality)').order('created_at', { ascending: false }).limit(200),
+                // JOIN con client_identity para traer nationality y passport_number
+                supabase.from('clients').select('*, client_identity(nationality, passport_number)').order('created_at', { ascending: false }).limit(200),
                 supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('destination_images').select('*').order('display_order', { ascending: true }),
                 supabase.from('activity_images').select('*').order('display_order', { ascending: true }),
@@ -161,6 +161,7 @@ export function AppProvider({ children }) {
                 return {
                     ...c,
                     nationality: identity?.nationality || c.nationality || '',
+                    passport: identity?.passport_number || c.passport || '',
                     registration_date: c.booking_date || '', // Map booking_date to registration_date in UI
                 };
             }));
@@ -330,7 +331,7 @@ export function AppProvider({ children }) {
             const nextOffset = (clientsPage + 1) * PAGE_SIZE;
             const { data, error } = await supabase
                 .from('clients')
-                .select('*, client_identity(nationality)')
+                .select('*, client_identity(nationality, passport_number)')
                 .order('created_at', { ascending: false })
                 .range(nextOffset, nextOffset + PAGE_SIZE - 1);
 
@@ -343,6 +344,7 @@ export function AppProvider({ children }) {
                     return {
                         ...c,
                         nationality: identity?.nationality || c.nationality || '',
+                        passport: identity?.passport_number || c.passport || '',
                         registration_date: c.booking_date || '',
                     };
                 });
@@ -795,10 +797,11 @@ export function AppProvider({ children }) {
 
         if (error) { showNotification('Error al crear cliente', 'error'); console.error(error); return false; }
 
-        if (newClient.nationality) {
+        if (newClient.nationality || newClient.passport) {
             const { error: identityError } = await supabase.from('client_identity').insert([{
                 client_id: data.id,
                 nationality: newClient.nationality || null,
+                passport_number: newClient.passport || null,
             }]);
             if (identityError) {
                 console.error('Error insertando identidad (RLS):', identityError);
@@ -809,11 +812,12 @@ export function AppProvider({ children }) {
         setClients(prev => {
             const exists = prev.find(c => String(c.id) === String(data.id));
             if (exists) {
-                return prev.map(c => String(c.id) === String(data.id) ? { ...c, ...data, nationality: newClient.nationality || c.nationality || '' } : c);
+                return prev.map(c => String(c.id) === String(data.id) ? { ...c, ...data, nationality: newClient.nationality || c.nationality || '', passport: newClient.passport || c.passport || '' } : c);
             }
             return [{
                 ...data,
                 nationality: newClient.nationality || '',
+                passport: newClient.passport || '',
                 registration_date: newClient.registration_date || data.booking_date || '',
             }, ...prev];
         });
@@ -838,10 +842,11 @@ export function AppProvider({ children }) {
 
         if (error) { showNotification('Error al actualizar cliente', 'error'); return false; }
 
-        if (updatedClient.nationality) {
+        if (updatedClient.nationality || updatedClient.passport) {
             const { error: identityError } = await supabase.from('client_identity').upsert([{
                 client_id: id,
                 nationality: updatedClient.nationality || null,
+                passport_number: updatedClient.passport || null,
             }], { onConflict: 'client_id' });
             if (identityError) {
                 console.error('Error actualizando identidad (RLS):', identityError);
@@ -852,11 +857,12 @@ export function AppProvider({ children }) {
         setClients(prev => {
             const exists = prev.find(c => String(c.id) === String(data.id));
             if (exists) {
-                return prev.map(c => String(c.id) === String(data.id) ? { ...c, ...data, nationality: updatedClient.nationality || c.nationality || '', registration_date: updatedClient.registration_date || data.booking_date || '' } : c);
+                return prev.map(c => String(c.id) === String(data.id) ? { ...c, ...data, nationality: updatedClient.nationality || c.nationality || '', passport: updatedClient.passport || c.passport || '', registration_date: updatedClient.registration_date || data.booking_date || '' } : c);
             }
             return [{
                 ...data,
                 nationality: updatedClient.nationality || '',
+                passport: updatedClient.passport || '',
                 registration_date: updatedClient.registration_date || data.booking_date || '',
             }, ...prev];
         });

@@ -148,7 +148,7 @@ export default function Sales() {
                                             borderRadius: '6px',
                                             fontSize: '0.8rem'
                                         }}>
-                                            {sale.custom_itinerary ? sale.custom_itinerary.length : 0} Días
+                                            {sale.custom_itinerary?.length > 0 ? Math.max(...sale.custom_itinerary.map(i => i.day)) : 0} Días
                                         </span>
                                     </td>
                                     {can('canViewFinancials') && (
@@ -357,15 +357,16 @@ export default function Sales() {
                         {/* Total Footer */}
                         {can('canViewFinancials') && (
                             <div style={{
-                                background: 'var(--bg-main)',
+                                background: 'var(--gradient-purple)',
                                 margin: '0 -2rem -2rem -2rem',
                                 padding: '1.5rem 2rem',
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
+                                borderRadius: '0 0 20px 20px',
                                 color: 'white'
                             }}>
-                                <span style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.8 }}>Total Venta</span>
+                                <span style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.9 }}>Total Venta</span>
                                 <span style={{ fontSize: '1.75rem', fontWeight: 800 }}>
                                     {`$ ${viewingItinerary.total_amount ? viewingItinerary.total_amount.toLocaleString() : '0'} USD`}
                                 </span>

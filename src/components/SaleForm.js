@@ -73,9 +73,11 @@ export default function SaleForm({ onSubmit, onCancel }) {
     }, [sales]);
 
     const handleAddPOI = (poi) => {
-        // Allow adding same POI multiple times? Usually no, but maybe. Let's assume Unique for now.
         if (!selectedPOIs.find(s => s.id === poi.id)) {
-            setSelectedPOIs([...selectedPOIs, poi]);
+            const nextDay = selectedPOIs.length > 0
+                ? Math.max(...selectedPOIs.map(p => p.day)) + 1
+                : 1;
+            setSelectedPOIs([...selectedPOIs, { ...poi, day: nextDay }]);
         }
     };
 
@@ -83,13 +85,24 @@ export default function SaleForm({ onSubmit, onCancel }) {
         setSelectedPOIs(selectedPOIs.filter(p => p.id !== poiId));
     };
 
-    const movePoi = (index, direction) => {
-        const newArr = [...selectedPOIs];
-        const targetIndex = index + direction;
-        if (targetIndex >= 0 && targetIndex < newArr.length) {
-            [newArr[index], newArr[targetIndex]] = [newArr[targetIndex], newArr[index]];
-            setSelectedPOIs(newArr);
-        }
+    const handleDayChange = (poiId, value) => {
+        const parsed = parseInt(value, 10);
+        const day = isNaN(parsed) || parsed < 1 ? 1 : parsed;
+        setSelectedPOIs(selectedPOIs.map(p => p.id === poiId ? { ...p, day } : p));
+    };
+
+    const movePoi = (poiId, direction) => {
+        const sorted = [...selectedPOIs].sort((a, b) => a.day - b.day);
+        const idx = sorted.findIndex(p => p.id === poiId);
+        const targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= sorted.length) return;
+        const currentDay = sorted[idx].day;
+        const targetDay = sorted[targetIdx].day;
+        setSelectedPOIs(selectedPOIs.map(p => {
+            if (p.id === sorted[idx].id) return { ...p, day: targetDay };
+            if (p.id === sorted[targetIdx].id) return { ...p, day: currentDay };
+            return p;
+        }));
     };
 
     const handleSubmit = (e) => {
@@ -140,10 +153,7 @@ export default function SaleForm({ onSubmit, onCancel }) {
                 additional_notes: formData.additional_notes || '',
                 show_price_on_voucher: formData.show_price_on_voucher
             },
-            custom_itinerary: selectedPOIs.map((p, index) => ({
-                day: index + 1,
-                ...p
-            }))
+            custom_itinerary: [...selectedPOIs].sort((a, b) => a.day - b.day)
         };
 
         onSubmit(submission);
@@ -453,7 +463,7 @@ export default function SaleForm({ onSubmit, onCancel }) {
                             <MapPin size={18} /> Armar Itinerario de Viaje
                         </h3>
                         <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', opacity: 0.8 }}>
-                            Selecciona las actividades. El orden definirá el día asignado.
+                            Selecciona las actividades y asigna el día del viaje en que se realizarán.
                         </p>
                     </div>
 
@@ -538,85 +548,108 @@ export default function SaleForm({ onSubmit, onCancel }) {
                                         background: 'var(--border-color)'
                                     }}></div>
 
-                                    {selectedPOIs.map((p, idx) => (
-                                        <div key={p.id} style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                                            {/* Dot */}
-                                            <div style={{
-                                                position: 'absolute',
-                                                left: '-2.45rem',
-                                                top: '4px',
-                                                width: '16px',
-                                                height: '16px',
-                                                borderRadius: '50%',
-                                                background: 'var(--primary-color)',
-                                                border: '4px solid var(--bg-card)'
-                                            }}></div>
+                                    {(() => {
+                                        const sorted = [...selectedPOIs].sort((a, b) => a.day - b.day);
+                                        return sorted.map((p, idx) => (
+                                            <div key={p.id} style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                                                {/* Dot */}
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    left: '-2.45rem',
+                                                    top: '4px',
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    borderRadius: '50%',
+                                                    background: 'var(--primary-color)',
+                                                    border: '4px solid var(--bg-card)'
+                                                }}></div>
 
-                                            {/* Content Card */}
-                                            <div style={{
-                                                background: 'rgba(157, 116, 200, 0.15)',
-                                                borderRadius: '8px',
-                                                padding: '0.75rem',
-                                                border: '1px solid rgba(157, 116, 200, 0.3)',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div>
-                                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary-color)', marginBottom: '2px' }}>DÍA {idx + 1}</div>
-                                                    <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem' }}>{p.name}</div>
-                                                </div>
+                                                {/* Content Card */}
+                                                <div style={{
+                                                    background: 'rgba(157, 116, 200, 0.15)',
+                                                    borderRadius: '8px',
+                                                    padding: '0.75rem',
+                                                    border: '1px solid rgba(157, 116, 200, 0.3)',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary-color)' }}>DÍA</span>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                value={p.day}
+                                                                onChange={(e) => handleDayChange(p.id, e.target.value)}
+                                                                style={{
+                                                                    width: '46px',
+                                                                    padding: '2px 4px',
+                                                                    border: '1px solid rgba(157, 116, 200, 0.5)',
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '0.8rem',
+                                                                    fontWeight: 700,
+                                                                    color: 'var(--primary-color)',
+                                                                    background: 'var(--bg-card)',
+                                                                    textAlign: 'center',
+                                                                    outline: 'none'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{p.name}</div>
+                                                    </div>
 
-                                                <div style={{ display: 'flex', gap: '4px' }}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => movePoi(idx, -1)}
-                                                        disabled={idx === 0}
-                                                        style={{
-                                                            padding: '4px',
-                                                            borderRadius: '4px',
-                                                            border: 'none',
-                                                            background: idx === 0 ? 'transparent' : 'var(--bg-card)',
-                                                            color: idx === 0 ? 'var(--text-light)' : 'var(--text-secondary)',
-                                                            cursor: idx === 0 ? 'default' : 'pointer'
-                                                        }}
-                                                    >
-                                                        <ArrowUp size={14} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => movePoi(idx, 1)}
-                                                        disabled={idx === selectedPOIs.length - 1}
-                                                        style={{
-                                                            padding: '4px',
-                                                            borderRadius: '4px',
-                                                            border: 'none',
-                                                            background: idx === selectedPOIs.length - 1 ? 'transparent' : 'var(--bg-card)',
-                                                            color: idx === selectedPOIs.length - 1 ? 'var(--text-light)' : 'var(--text-secondary)',
-                                                            cursor: idx === selectedPOIs.length - 1 ? 'default' : 'pointer'
-                                                        }}
-                                                    >
-                                                        <ArrowDown size={14} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemovePOI(p.id)}
-                                                        style={{
-                                                            padding: '4px',
-                                                            borderRadius: '4px',
-                                                            border: 'none',
-                                                            background: 'rgba(239, 68, 68, 0.15)',
-                                                            color: '#EF4444',
-                                                            cursor: 'pointer',
-                                                            marginLeft: '4px'
-                                                        }}
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
+                                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => movePoi(p.id, -1)}
+                                                            disabled={idx === 0}
+                                                            style={{
+                                                                padding: '4px',
+                                                                borderRadius: '4px',
+                                                                border: 'none',
+                                                                background: idx === 0 ? 'transparent' : 'var(--bg-card)',
+                                                                color: idx === 0 ? 'var(--text-light)' : 'var(--text-secondary)',
+                                                                cursor: idx === 0 ? 'default' : 'pointer'
+                                                            }}
+                                                        >
+                                                            <ArrowUp size={14} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => movePoi(p.id, 1)}
+                                                            disabled={idx === sorted.length - 1}
+                                                            style={{
+                                                                padding: '4px',
+                                                                borderRadius: '4px',
+                                                                border: 'none',
+                                                                background: idx === sorted.length - 1 ? 'transparent' : 'var(--bg-card)',
+                                                                color: idx === sorted.length - 1 ? 'var(--text-light)' : 'var(--text-secondary)',
+                                                                cursor: idx === sorted.length - 1 ? 'default' : 'pointer'
+                                                            }}
+                                                        >
+                                                            <ArrowDown size={14} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemovePOI(p.id)}
+                                                            style={{
+                                                                padding: '4px',
+                                                                borderRadius: '4px',
+                                                                border: 'none',
+                                                                background: 'rgba(239, 68, 68, 0.15)',
+                                                                color: '#EF4444',
+                                                                cursor: 'pointer',
+                                                                marginLeft: '4px'
+                                                            }}
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ));
+                                    })()}
                                 </div>
                             )}
                         </div>

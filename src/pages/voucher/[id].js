@@ -197,7 +197,7 @@ export default function Voucher() {
     // Chunking adaptativo: 2 por página si algún ítem tiene imagen o descripción larga, 3 si son cortos
     const buildItineraryPages = (items) => {
         if (items.length === 0) return [[]];
-        const isBig = (item) => item && (!!item.image || (item.description || '').length > 200);
+        const isBig = (item) => item && (!!item.image || item.images?.length > 0 || (item.description || '').length > 200);
         const pages = [];
         let i = 0;
         while (i < items.length) {
@@ -757,7 +757,7 @@ export default function Voucher() {
                                                         <div className={styles.itineraryImageWrapper} style={item.images?.length > 1 ? { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' } : {}}>
                                                             {item.images?.length > 0
                                                                 ? item.images.map((img, imgIdx) => (
-                                                                    <img key={imgIdx} src={img.url} alt={item.name || item.title} style={item.images.length > 1 ? { flex: '1 1 45%', minWidth: 0, objectFit: 'cover', borderRadius: '6px' } : {}} />
+                                                                    <img key={imgIdx} src={img.url} alt={item.name || item.title} style={item.images.length > 1 ? { flex: '1 1 45%', width: 'auto', minWidth: 0, objectFit: 'cover', borderRadius: '6px' } : {}} />
                                                                 ))
                                                                 : <img src={item.image} alt={item.name || item.title} />
                                                             }

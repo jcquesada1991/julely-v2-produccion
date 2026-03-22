@@ -265,6 +265,7 @@ function ClientForm({ initialData, onSubmit, onCancel, onDirty }) {
         email: '',
         registration_date: initialData?.registration_date || new Date().toISOString().split('T')[0],
         nationality: '',
+        passport: '',
         notes: ''
     });
 
@@ -416,6 +417,16 @@ function ClientForm({ initialData, onSubmit, onCancel, onDirty }) {
                         value={formData.nationality}
                         onChange={e => handleChange('nationality', e.target.value)}
                         placeholder="Ej. Colombiano"
+                    />
+                </div>
+
+                <div style={groupStyle}>
+                    <label style={labelStyle}>N° Pasaporte</label>
+                    <input
+                        style={inputStyle}
+                        value={formData.passport}
+                        onChange={e => handleChange('passport', e.target.value)}
+                        placeholder="Ej. AB1234567"
                     />
                 </div>
 
