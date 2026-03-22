@@ -291,7 +291,7 @@ export default function ImageUploader({
                         ) : (
                             <>
                                 <Upload size={24} />
-                                <span style={{ fontWeight: 600 }}>Haz clic para seleccionar imagen{multiple ? ' (hasta 3)' : ''}</span>
+                                <span style={{ fontWeight: 600 }}>Haz clic para seleccionar imagen{multiple ? ` (hasta ${maxFiles})` : ''}</span>
                                 <span style={{ fontSize: '0.75rem' }}>JPG, PNG, WebP · Se comprimirán automáticamente</span>
                             </>
                         )}
