@@ -101,19 +101,26 @@ export default function Itineraries() {
                             {itineraries.map(item => (
                                 <tr key={item.id}>
                                     <td>
-                                        <div className={styles.imgThumbnail} style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-card-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {item.image ? (
-                                                <img
-                                                    src={item.image}
-                                                    alt={item.name}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-camera-off"><line x1="1" x2="23" y1="1" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-2h7l2 2"/><path d="M7 13a4 4 0 0 1 4-4"/><path d="M15 13a4 4 0 0 0-4 4"/></svg>';
-                                                    }}
-                                                />
-                                            ) : (
-                                                <CameraOff size={20} color="var(--text-secondary)" />
+                                        <div style={{ position: 'relative', width: '50px', height: '50px' }}>
+                                            <div className={styles.imgThumbnail} style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-card-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {item.image ? (
+                                                    <img
+                                                        src={item.image}
+                                                        alt={item.name}
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-camera-off"><line x1="1" x2="23" y1="1" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-2h7l2 2"/><path d="M7 13a4 4 0 0 1 4-4"/><path d="M15 13a4 4 0 0 0-4 4"/></svg>';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <CameraOff size={20} color="var(--text-secondary)" />
+                                                )}
+                                            </div>
+                                            {item.images?.length > 1 && (
+                                                <span style={{ position: 'absolute', bottom: 2, right: 2, background: 'rgba(0,0,0,0.65)', color: 'white', fontSize: '0.6rem', fontWeight: 700, borderRadius: '4px', padding: '1px 4px', lineHeight: 1.4 }}>
+                                                    +{item.images.length - 1}
+                                                </span>
                                             )}
                                         </div>
                                     </td>
@@ -190,13 +197,17 @@ export default function Itineraries() {
 }
 
 function ItineraryForm({ initialData, destinations, onSubmit, onCancel, onDirty }) {
-    const [formData, setFormData] = useState(initialData || {
-        destination_id: '',
-        name: '',
-        description: '',
-        price_adult: '',
-        price_child: '',
-        image: ''
+    const initImages = initialData?.images?.length > 0
+        ? initialData.images.map(i => i.url)
+        : (initialData?.image ? [initialData.image] : []);
+
+    const [formData, setFormData] = useState({
+        destination_id: initialData?.destination_id || '',
+        name: initialData?.name || '',
+        description: initialData?.description || '',
+        price_adult: initialData?.price_adult || '',
+        price_child: initialData?.price_child || '',
+        images: initImages,
     });
 
     const handleSubmit = (e) => {
@@ -249,12 +260,16 @@ function ItineraryForm({ initialData, destinations, onSubmit, onCancel, onDirty 
             </div>
 
             <ImageUploader
-                label="Imagen de la Excursión"
-                value={formData.image || ''}
-                onChange={(url) => { setFormData({ ...formData, image: url }); if (onDirty) onDirty(true); }}
+                label="Imágenes de la Excursión"
+                value={formData.images}
+                onChange={(urls) => {
+                    setFormData({ ...formData, images: Array.isArray(urls) ? urls : [urls].filter(Boolean) });
+                    if (onDirty) onDirty(true);
+                }}
                 folder="excursiones"
-                placeholder="Seleccione la imagen de la excursión"
                 disableUrl={true}
+                multiple={true}
+                maxFiles={5}
             />
 
             <label style={labelStyle}>Descripción</label>

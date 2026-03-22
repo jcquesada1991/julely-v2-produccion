@@ -102,6 +102,7 @@ export function AppProvider({ children }) {
                 { data: clientsData, error: clientsErr },
                 { data: activData, error: activErr },
                 { data: destImgData, error: destImgErr },
+                { data: actImgData, error: actImgErr },
                 { data: settingsData, error: settingsErr },
                 { data: hotelsData, error: hotelsErr },
             ] = await Promise.all([
@@ -112,6 +113,7 @@ export function AppProvider({ children }) {
                 supabase.from('clients').select('*, client_identity(nationality)').order('created_at', { ascending: false }).limit(200),
                 supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(200),
                 supabase.from('destination_images').select('*').order('display_order', { ascending: true }),
+                supabase.from('activity_images').select('*').order('display_order', { ascending: true }),
                 supabase.from('settings').select('*'),
                 supabase.from('hotels').select('*').order('name', { ascending: true }),
             ]);
@@ -122,6 +124,7 @@ export function AppProvider({ children }) {
             if (clientsErr) console.error('Error cargando clientes:', clientsErr);
             if (activErr) console.error('Error cargando actividades:', activErr);
             if (destImgErr) console.error('Error cargando imágenes de destinos:', destImgErr);
+            if (actImgErr) console.error('Error cargando imágenes de excursiones:', actImgErr);
             if (settingsErr) console.error('Error cargando settings:', settingsErr);
             if (hotelsErr) console.error('Error cargando hoteles:', hotelsErr);
 
@@ -162,10 +165,18 @@ export function AppProvider({ children }) {
                 };
             }));
 
+            // Agrupar imágenes de excursiones por activity_id
+            const imagesByActivity = {};
+            (actImgData || []).forEach(img => {
+                if (!imagesByActivity[img.activity_id]) imagesByActivity[img.activity_id] = [];
+                imagesByActivity[img.activity_id].push(img);
+            });
+
             // Normalize activities
             setItineraries((activData || []).map(a => ({
                 ...a,
                 image: a.image_url,
+                images: imagesByActivity[a.id] || [],
             })));
 
             const settingsMap = {};
@@ -889,6 +900,7 @@ export function AppProvider({ children }) {
         try {
             await ensureSession();
             const dest = destinations.find(d => String(d.id) === String(newItinerary.destination_id));
+            const images = newItinerary.images?.length > 0 ? newItinerary.images : (newItinerary.image ? [newItinerary.image] : []);
             const { data, error } = await supabase
                 .from('activities')
                 .insert([{
@@ -898,18 +910,26 @@ export function AppProvider({ children }) {
                     description: newItinerary.description,
                     price_adult: parseFloat(newItinerary.price_adult) || 0,
                     price_child: parseFloat(newItinerary.price_child) || 0,
-                    image_url: newItinerary.image || '',
+                    image_url: images[0] || '',
                     is_active: true,
                 }])
                 .select().single();
 
             if (error) throw error;
+
+            let savedImages = [];
+            if (images.length > 0) {
+                const rows = images.map((url, idx) => ({ activity_id: data.id, url, display_order: idx }));
+                const { data: imgData } = await supabase.from('activity_images').insert(rows).select();
+                savedImages = imgData || [];
+            }
+
             setItineraries(prev => {
                 const exists = prev.find(i => String(i.id) === String(data.id));
                 if (exists) {
-                    return prev.map(i => String(i.id) === String(data.id) ? { ...i, ...data, image: data.image_url } : i);
+                    return prev.map(i => String(i.id) === String(data.id) ? { ...i, ...data, image: data.image_url, images: savedImages } : i);
                 }
-                return [{ ...data, image: data.image_url }, ...prev];
+                return [{ ...data, image: data.image_url, images: savedImages }, ...prev];
             });
             showNotification('Excursión creada correctamente');
             await loadAll(true);
@@ -927,6 +947,7 @@ export function AppProvider({ children }) {
         try {
             await ensureSession();
             const dest = destinations.find(d => String(d.id) === String(updatedItinerary.destination_id));
+            const images = updatedItinerary.images?.length > 0 ? updatedItinerary.images : (updatedItinerary.image ? [updatedItinerary.image] : []);
             const { data, error } = await supabase
                 .from('activities')
                 .update({
@@ -936,17 +957,27 @@ export function AppProvider({ children }) {
                     description: updatedItinerary.description,
                     price_adult: parseFloat(updatedItinerary.price_adult) || 0,
                     price_child: parseFloat(updatedItinerary.price_child) || 0,
-                    image_url: updatedItinerary.image || '',
+                    image_url: images[0] || '',
                 })
                 .eq('id', id).select().single();
 
             if (error) throw error;
+
+            // Reemplazar galería de imágenes
+            await supabase.from('activity_images').delete().eq('activity_id', id);
+            let savedImages = [];
+            if (images.length > 0) {
+                const rows = images.map((url, idx) => ({ activity_id: id, url, display_order: idx }));
+                const { data: imgData } = await supabase.from('activity_images').insert(rows).select();
+                savedImages = imgData || [];
+            }
+
             setItineraries(prev => {
                 const exists = prev.find(i => String(i.id) === String(id));
                 if (exists) {
-                    return prev.map(i => String(i.id) === String(id) ? { ...i, ...data, image: data.image_url } : i);
+                    return prev.map(i => String(i.id) === String(id) ? { ...i, ...data, image: data.image_url, images: savedImages } : i);
                 }
-                return [{ ...data, image: data.image_url }, ...prev];
+                return [{ ...data, image: data.image_url, images: savedImages }, ...prev];
             });
             showNotification('Excursión actualizada correctamente');
             await loadAll(true);
@@ -1021,6 +1052,34 @@ export function AppProvider({ children }) {
     };
 
     // ════════════════════════════════════════════════════════════════
+    // IMÁGENES DE EXCURSIONES
+    // ════════════════════════════════════════════════════════════════
+    const addActivityImages = async (activityId, urls) => {
+        await ensureSession();
+        if (!urls || urls.length === 0) return [];
+        const rows = urls.map((url, idx) => ({ activity_id: activityId, url, display_order: idx }));
+        const { data, error } = await supabase.from('activity_images').insert(rows).select();
+        if (error) { console.error('Error guardando imágenes de excursión:', error); return []; }
+        setItineraries(prev => prev.map(a =>
+            String(a.id) === String(activityId)
+                ? { ...a, images: [...(a.images || []), ...data] }
+                : a
+        ));
+        return data;
+    };
+
+    const deleteActivityImage = async (imageId, activityId) => {
+        await ensureSession();
+        const { error } = await supabase.from('activity_images').delete().eq('id', imageId);
+        if (error) { showNotification('Error al eliminar imagen', 'error'); return; }
+        setItineraries(prev => prev.map(a =>
+            String(a.id) === String(activityId)
+                ? { ...a, images: (a.images || []).filter(img => img.id !== imageId) }
+                : a
+        ));
+    };
+
+    // ════════════════════════════════════════════════════════════════
     // HOTELES CRUD
     // ════════════════════════════════════════════════════════════════
     const addHotel = async (hotel) => {
@@ -1077,6 +1136,7 @@ export function AppProvider({ children }) {
             addUser, updateUser, deleteUser,
             addClient, updateClient, deleteClient,
             addItinerary, updateItinerary, deleteItinerary,
+            addActivityImages, deleteActivityImage,
             addHotel, updateHotel, deleteHotel,
             updateSystemSetting,
             refetch: loadAll,

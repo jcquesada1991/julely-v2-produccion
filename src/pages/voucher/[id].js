@@ -753,9 +753,14 @@ export default function Voucher() {
                                                             )}
                                                         </>
                                                     )}
-                                                    {item.image && (
-                                                        <div className={styles.itineraryImageWrapper}>
-                                                            <img src={item.image} alt={item.name || item.title} />
+                                                    {(item.images?.length > 0 || item.image) && (
+                                                        <div className={styles.itineraryImageWrapper} style={item.images?.length > 1 ? { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' } : {}}>
+                                                            {item.images?.length > 0
+                                                                ? item.images.map((img, imgIdx) => (
+                                                                    <img key={imgIdx} src={img.url} alt={item.name || item.title} style={item.images.length > 1 ? { flex: '1 1 45%', minWidth: 0, objectFit: 'cover', borderRadius: '6px' } : {}} />
+                                                                ))
+                                                                : <img src={item.image} alt={item.name || item.title} />
+                                                            }
                                                         </div>
                                                     )}
                                                 </div>
