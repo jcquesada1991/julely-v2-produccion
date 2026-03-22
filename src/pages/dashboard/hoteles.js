@@ -5,7 +5,7 @@ import Modal from '@/components/Modal';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import styles from '@/styles/DashboardV2.module.css';
-import { Plus, Edit, Trash2, Building, MapPin, Phone, Star } from 'lucide-react';
+import { Plus, Edit, Trash2, Building, Search } from 'lucide-react';
 import { useConfirm } from '@/components/ConfirmModal';
 
 const EMPTY_HOTEL = { name: '', address: '', phone: '', category: '', is_active: true };
@@ -75,16 +75,28 @@ export default function Hoteles() {
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{hotels.length} hotel{hotels.length !== 1 ? 'es' : ''} registrado{hotels.length !== 1 ? 's' : ''}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre, dirección o categoría..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{ ...inputStyle, maxWidth: '300px', background: 'var(--bg-card)' }}
-                    />
+                    <div style={{ position: 'relative' }}>
+                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar hotel..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            style={{
+                                padding: '0.6rem 0.75rem 0.6rem 2.25rem',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.85rem',
+                                outline: 'none',
+                                width: '220px'
+                            }}
+                        />
+                    </div>
                     {canManage && (
                         <button className="btn-primary" onClick={handleNew}>
-                            <Plus size={16} /> Nuevo Hotel
+                            <Plus size={20} /> Nuevo Hotel
                         </button>
                     )}
                 </div>
