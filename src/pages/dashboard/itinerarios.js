@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Modal from '@/components/Modal';
 import { useApp } from '@/context/AppContext';
 import styles from '@/styles/DashboardV2.module.css';
-import { Plus, MapPin, Edit, Trash2, CameraOff } from 'lucide-react';
+import { Plus, MapPin, Edit, Trash2, CameraOff, Search } from 'lucide-react';
 import { useConfirm } from '@/components/ConfirmModal';
 import SearchableSelect from '@/components/SearchableSelect';
 import ImageUploader from '@/components/ImageUploader';
@@ -15,6 +15,7 @@ export default function Itineraries() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItinerary, setCurrentItinerary] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
+    const [search, setSearch] = useState('');
 
     const renderDestName = (item) => {
         const d = destinations.find(x => String(x.id) === String(item.destination_id));
@@ -75,14 +76,27 @@ export default function Itineraries() {
                 <title>Excursiones | Julely</title>
             </Head>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h2 className={styles.pageTitle} style={{ fontSize: '2rem' }}>Excursiones</h2>
                     <p style={{ color: 'var(--text-secondary)' }}>Gestiona las excursiones para los itinerarios</p>
                 </div>
-                <button className="btn-primary" onClick={() => { setCurrentItinerary(null); setIsDirty(false); setIsModalOpen(true); }}>
-                    <Plus size={20} /> Nueva Excursión
-                </button>
+                <div className={styles.pageHeaderActions}>
+                    <div style={{ position: 'relative' }}>
+                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar excursión..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className={styles.pageHeaderSearch}
+                            style={{ padding: '0.6rem 0.75rem 0.6rem 2.25rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none', width: '100%' }}
+                        />
+                    </div>
+                    <button className="btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => { setCurrentItinerary(null); setIsDirty(false); setIsModalOpen(true); }}>
+                        <Plus size={20} /> Nueva Excursión
+                    </button>
+                </div>
             </div>
 
             <div className={styles.paramountCard}>
@@ -98,7 +112,10 @@ export default function Itineraries() {
                             </tr>
                         </thead>
                         <tbody>
-                            {itineraries.map(item => (
+                            {itineraries.filter(item => {
+                                const q = search.toLowerCase();
+                                return !q || item.name?.toLowerCase().includes(q) || item.description?.toLowerCase().includes(q) || item.destination_name?.toLowerCase().includes(q);
+                            }).map(item => (
                                 <tr key={item.id}>
                                     <td>
                                         <div style={{ position: 'relative', width: '50px', height: '50px' }}>
@@ -162,6 +179,16 @@ export default function Itineraries() {
                                 <tr>
                                     <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                                         No hay excursiones registradas.
+                                    </td>
+                                </tr>
+                            )}
+                            {itineraries.length > 0 && search && itineraries.filter(item => {
+                                const q = search.toLowerCase();
+                                return item.name?.toLowerCase().includes(q) || item.description?.toLowerCase().includes(q) || item.destination_name?.toLowerCase().includes(q);
+                            }).length === 0 && (
+                                <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                                        No se encontraron excursiones con ese criterio.
                                     </td>
                                 </tr>
                             )}
