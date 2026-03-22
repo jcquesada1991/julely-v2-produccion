@@ -766,22 +766,8 @@
     }
 }
 
-@media (max-width: 768px) {
-    .gridContainer {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-
-    .card {
-        height: auto;
-        min-height: 400px;
-    }
-
-    .statsRow {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
+/* Navigation collapses to hamburger when items overflow (~1250px) */
+@media (max-width: 1250px) {
     /* Mobile Navigation adjustments */
     .topNav {
         height: auto;
@@ -854,6 +840,23 @@
 
     .brandLogo {
         font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .gridContainer {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .card {
+        height: auto;
+        min-height: 400px;
+    }
+
+    .statsRow {
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
 
     .pageTitle {
