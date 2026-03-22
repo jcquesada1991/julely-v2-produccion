@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import SearchableSelect from './SearchableSelect';
-import { Plus, X, ArrowUp, ArrowDown, MapPin, Calendar, CheckCircle, Building } from 'lucide-react';
+import { Plus, X, ArrowUp, ArrowDown, MapPin, Calendar, CheckCircle, Building, Trash2 } from 'lucide-react';
 import styles from '@/styles/DashboardV2.module.css';
 
+const EMPTY_HOTEL_ENTRY = { catalog_id: '', hotel_name: '', hotel_address: '', hotel_phone: '', occupancy: '' };
+
 export default function SaleForm({ onSubmit, onCancel }) {
-    const { destinations, clients, users, itineraries, sales } = useApp();
+    const { destinations, clients, users, itineraries, sales, hotels } = useApp();
     const { currentUser: profile } = useAuth();
     const [formData, setFormData] = useState({
         client_name: '',
@@ -18,15 +20,15 @@ export default function SaleForm({ onSubmit, onCancel }) {
         show_price_on_voucher: true,
         travel_date: '',
         return_date: '',
-        hotel_name: '',
-        hotel_address: '',
-        hotel_phone: '',
         description: 'Personalizado',
-        occupancy: '',
         additional_notes: '',
         confirmation_id: '',
         customItinerary: []
     });
+
+    const [hotelsList, setHotelsList] = useState([]);
+    const [showAddHotel, setShowAddHotel] = useState(false);
+    const [newHotel, setNewHotel] = useState(EMPTY_HOTEL_ENTRY);
 
     const [availablePOIs, setAvailablePOIs] = useState([]);
     const [selectedPOIs, setSelectedPOIs] = useState([]);
@@ -127,13 +129,15 @@ export default function SaleForm({ onSubmit, onCancel }) {
             return_date: formData.return_date || null,
             assigned_to: formData.seller_id || null, // Vendedor
             hotel_info: {
-                hotel_name: formData.hotel_name || '',
-                hotel_address: formData.hotel_address || '',
-                hotel_phone: formData.hotel_phone || '',
-                description: formData.description || '', // Grupal, personalizado, etc.
-                occupancy: formData.occupancy || '', // Doble, triple, etc.
+                hotels: hotelsList,
+                // legacy fallback: first hotel fields for old voucher compat
+                hotel_name: hotelsList[0]?.hotel_name || '',
+                hotel_address: hotelsList[0]?.hotel_address || '',
+                hotel_phone: hotelsList[0]?.hotel_phone || '',
+                occupancy: hotelsList[0]?.occupancy || '',
+                description: formData.description || '',
                 confirmation_id: formData.confirmation_id || '',
-                additional_notes: formData.additional_notes || '', // Notas adicionales
+                additional_notes: formData.additional_notes || '',
                 show_price_on_voucher: formData.show_price_on_voucher
             },
             custom_itinerary: selectedPOIs.map((p, index) => ({
@@ -308,54 +312,116 @@ export default function SaleForm({ onSubmit, onCancel }) {
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                    <div>
-                        <label style={labelStyle}>Nombre del Hotel</label>
-                        <input
-                            type="text"
-                            placeholder="Ej. Hotel Paraíso"
-                            value={formData.hotel_name || ''}
-                            onChange={(e) => setFormData({ ...formData, hotel_name: e.target.value })}
-                            style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }}
-                        />
+                {/* Multi-hotel section */}
+                <div style={{ marginTop: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <label style={{ ...labelStyle, marginTop: 0, marginBottom: 0 }}>Alojamientos del Viaje</label>
+                        {!showAddHotel && (
+                            <button type="button" onClick={() => { setNewHotel(EMPTY_HOTEL_ENTRY); setShowAddHotel(true); }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary-color)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '6px' }}>
+                                <Plus size={14} /> Agregar Hotel
+                            </button>
+                        )}
                     </div>
-                    <div>
-                        <label style={{ ...labelStyle, marginTop: 0 }}>Dirección del Hotel</label>
-                        <input
-                            type="text"
-                            placeholder="Dirección"
-                            value={formData.hotel_address || ''}
-                            onChange={(e) => setFormData({ ...formData, hotel_address: e.target.value })}
-                            style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ ...labelStyle, marginTop: 0 }}>Teléfono del Hotel</label>
-                        <input
-                            type="text"
-                            placeholder="+1 234 567 8900"
-                            value={formData.hotel_phone || ''}
-                            onChange={(e) => setFormData({ ...formData, hotel_phone: e.target.value })}
-                            style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }}
-                        />
-                    </div>
+
+                    {/* Existing hotels list */}
+                    {hotelsList.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                            {hotelsList.map((h, idx) => (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-main)', padding: '0.65rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                    <Building size={14} color="var(--primary-color)" style={{ flexShrink: 0 }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.hotel_name}</div>
+                                        {h.hotel_address && <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{h.hotel_address}</div>}
+                                    </div>
+                                    {h.occupancy && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', flexShrink: 0 }}>{h.occupancy}</span>}
+                                    <button type="button" onClick={() => setHotelsList(prev => prev.filter((_, i) => i !== idx))}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '2px', flexShrink: 0 }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Add hotel inline form */}
+                    {showAddHotel && (
+                        <div style={{ background: 'var(--bg-main)', border: '1px solid var(--primary-color)', borderRadius: '10px', padding: '1rem', marginBottom: '0.75rem' }}>
+                            <div style={{ marginBottom: '0.75rem' }}>
+                                <label style={{ ...labelStyle, marginTop: 0 }}>Buscar en catálogo</label>
+                                <SearchableSelect
+                                    options={[{ id: '', name: 'Ingresar manualmente' }, ...(hotels || []).filter(h => h.is_active)]}
+                                    value={newHotel.catalog_id}
+                                    onChange={(e) => {
+                                        const selected = hotels?.find(h => String(h.id) === String(e.target.value));
+                                        if (selected) {
+                                            setNewHotel({ catalog_id: selected.id, hotel_name: selected.name, hotel_address: selected.address || '', hotel_phone: selected.phone || '', occupancy: newHotel.occupancy });
+                                        } else {
+                                            setNewHotel({ ...EMPTY_HOTEL_ENTRY });
+                                        }
+                                    }}
+                                    placeholder="Buscar hotel..."
+                                    valueKey="id"
+                                    labelKey="name"
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                <div style={{ gridColumn: '1 / -1' }}>
+                                    <label style={{ ...labelStyle, marginTop: 0 }}>Nombre del Hotel *</label>
+                                    <input type="text" placeholder="Nombre" value={newHotel.hotel_name}
+                                        onChange={e => setNewHotel({ ...newHotel, hotel_name: e.target.value, catalog_id: '' })}
+                                        style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }} />
+                                </div>
+                                <div>
+                                    <label style={{ ...labelStyle, marginTop: 0 }}>Dirección</label>
+                                    <input type="text" placeholder="Dirección" value={newHotel.hotel_address}
+                                        onChange={e => setNewHotel({ ...newHotel, hotel_address: e.target.value })}
+                                        style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }} />
+                                </div>
+                                <div>
+                                    <label style={{ ...labelStyle, marginTop: 0 }}>Teléfono</label>
+                                    <input type="text" placeholder="+1 234 567 8900" value={newHotel.hotel_phone}
+                                        onChange={e => setNewHotel({ ...newHotel, hotel_phone: e.target.value })}
+                                        style={{ ...selectStyle, backgroundImage: 'none', paddingRight: '0.75rem' }} />
+                                </div>
+                                <div style={{ gridColumn: '1 / -1' }}>
+                                    <label style={{ ...labelStyle, marginTop: 0 }}>Ocupación</label>
+                                    <select value={newHotel.occupancy} onChange={e => setNewHotel({ ...newHotel, occupancy: e.target.value })} style={selectStyle}>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Sencillo">Sencillo</option>
+                                        <option value="Doble">Doble</option>
+                                        <option value="Triple">Triple</option>
+                                        <option value="Cuádruple">Cuádruple</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+                                <button type="button" onClick={() => setShowAddHotel(false)}
+                                    style={{ padding: '0.45rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                    Cancelar
+                                </button>
+                                <button type="button"
+                                    onClick={() => {
+                                        if (!newHotel.hotel_name.trim()) return;
+                                        setHotelsList(prev => [...prev, { hotel_name: newHotel.hotel_name, hotel_address: newHotel.hotel_address, hotel_phone: newHotel.hotel_phone, occupancy: newHotel.occupancy }]);
+                                        setNewHotel(EMPTY_HOTEL_ENTRY);
+                                        setShowAddHotel(false);
+                                    }}
+                                    style={{ padding: '0.45rem 1rem', borderRadius: '8px', background: 'var(--primary-color)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                                    Agregar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {hotelsList.length === 0 && !showAddHotel && (
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', padding: '0.5rem 0' }}>
+                            Sin alojamientos registrados.
+                        </div>
+                    )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                    <div>
-                        <label style={{ ...labelStyle, marginTop: 0 }}>Ocupación</label>
-                        <select
-                            value={formData.occupancy || ''}
-                            onChange={(e) => setFormData({ ...formData, occupancy: e.target.value })}
-                            style={selectStyle}
-                        >
-                            <option value="">Seleccionar...</option>
-                            <option value="Sencillo">Sencillo</option>
-                            <option value="Doble">Doble</option>
-                            <option value="Triple">Triple</option>
-                            <option value="Cuádruple">Cuádruple</option>
-                        </select>
-                    </div>
                     <div>
                         <label style={{ ...labelStyle, marginTop: 0 }}>Número de Confirmación</label>
                         <input

@@ -37,6 +37,7 @@ export default function Voucher() {
     // New fields requested
     const [editTravelDate, setEditTravelDate] = useState('');
     const [editReturnDate, setEditReturnDate] = useState('');
+    const [editHotels, setEditHotels] = useState([]);
     const [editAdults, setEditAdults] = useState(1);
     const [editChildren, setEditChildren] = useState(0);
     const [editHotel, setEditHotel] = useState('');
@@ -81,11 +82,16 @@ export default function Voucher() {
             setEditTerms(overrides.terms || systemTerms);
             setEditNotes(overrides.notes || '');
 
-            setEditHotel(hotelInfo.hotel_name || '');
-            setEditHotelAddress(hotelInfo.hotel_address || '');
-            setEditHotelPhone(hotelInfo.hotel_phone || '');
-            setEditOccupancy(hotelInfo.occupancy || '');
+            // Support both new (hotels array) and legacy (flat fields) format
+            const firstHotel = Array.isArray(hotelInfo.hotels) && hotelInfo.hotels.length > 0
+                ? hotelInfo.hotels[0]
+                : hotelInfo;
+            setEditHotel(firstHotel.hotel_name || '');
+            setEditHotelAddress(firstHotel.hotel_address || '');
+            setEditHotelPhone(firstHotel.hotel_phone || '');
+            setEditOccupancy(firstHotel.occupancy || '');
             setEditConfirmation(hotelInfo.confirmation_id || '');
+            setEditHotels(Array.isArray(hotelInfo.hotels) ? hotelInfo.hotels : (hotelInfo.hotel_name ? [{ hotel_name: hotelInfo.hotel_name, hotel_address: hotelInfo.hotel_address || '', hotel_phone: hotelInfo.hotel_phone || '', occupancy: hotelInfo.occupancy || '' }] : []));
 
             // Initialize Pax
             setEditAdults(data.num_adults || overrides.adults || 1);
@@ -310,10 +316,11 @@ export default function Voucher() {
             const updatedHotelInfo = {
                 ...(data.hotel_info || {}),
                 show_price_on_voucher: showPrice,
-                hotel_name: editHotel,
-                hotel_address: editHotelAddress,
-                hotel_phone: editHotelPhone,
-                occupancy: editOccupancy,
+                hotels: editHotels.length > 0 ? editHotels : undefined,
+                hotel_name: editHotels[0]?.hotel_name ?? editHotel,
+                hotel_address: editHotels[0]?.hotel_address ?? editHotelAddress,
+                hotel_phone: editHotels[0]?.hotel_phone ?? editHotelPhone,
+                occupancy: editHotels[0]?.occupancy ?? editOccupancy,
                 confirmation_id: editConfirmation,
                 client_overrides: {
                     passport: editPassport,
@@ -570,41 +577,68 @@ export default function Voucher() {
                     <div className={styles.voucherPage}>
                         <div className={styles.mainContent}>
 
-                            {/* Hotel Details */}
-                            {hotelInfoItems.length > 0 && (
+                            {/* Hotel Details — múltiples alojamientos */}
+                            {(editHotels.length > 0 || hotelInfoItems.length > 0) && (
                                 <div className={styles.sectionBlock}>
-                                    <div className={styles.hotelDetailsBox}>
-                                        <div className={styles.hotelHeader}>
-                                            <div className={styles.hotelIcon}>
-                                                <Building size={24} />
-                                            </div>
-                                            <div>
-                                                <h3 className={styles.hotelCatTitle}>Datos del Alojamiento</h3>
-                                                <p className={styles.hotelCatSub}>Información oficial para su check-in</p>
-                                            </div>
-                                        </div>
-                                        <div className={styles.hotelGrid}>
-                                            {hotelInfoItems.map((item, idx) => (
-                                                <div key={idx} className={styles.hotelCol}>
-                                                    <div className={styles.hotelItemLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                                        <item.icon size={12} style={{ color: 'var(--primary-color)' }} />
-                                                        {item.label}
+                                    {editHotels.length > 0 ? (
+                                        /* New multi-hotel format */
+                                        editHotels.map((hotel, hIdx) => (
+                                            <div key={hIdx} className={styles.hotelDetailsBox} style={hIdx > 0 ? { marginTop: '1rem' } : {}}>
+                                                <div className={styles.hotelHeader}>
+                                                    <div className={styles.hotelIcon}><Building size={24} /></div>
+                                                    <div>
+                                                        <h3 className={styles.hotelCatTitle}>
+                                                            {editHotels.length > 1 ? `Alojamiento ${hIdx + 1}` : 'Datos del Alojamiento'}
+                                                        </h3>
+                                                        <p className={styles.hotelCatSub}>Información oficial para su check-in</p>
                                                     </div>
-                                                    {isEditing && !item.readOnly ? (
-                                                        <input
-                                                            className={styles.editInput}
-                                                            value={item.value}
-                                                            onChange={(e) => item.setValue(e.target.value)}
-                                                            placeholder={item.label}
-                                                            style={{ fontSize: '1rem', fontWeight: 600 }}
-                                                        />
-                                                    ) : (
-                                                        <div className={styles.hotelItemVal}>{item.value || "-"}</div>
-                                                    )}
                                                 </div>
-                                            ))}
+                                                <div className={styles.hotelGrid}>
+                                                    {[
+                                                        { label: 'HOTEL / ALOJAMIENTO', value: hotel.hotel_name, icon: Building },
+                                                        hotel.hotel_address && { label: 'DIRECCIÓN', value: hotel.hotel_address, icon: MapPin },
+                                                        hotel.hotel_phone && { label: 'TELÉFONO HOTEL', value: hotel.hotel_phone, icon: Phone },
+                                                        hotel.occupancy && { label: 'OCUPACIÓN', value: hotel.occupancy, icon: User },
+                                                        hIdx === 0 && (data.confirmation_code || voucher_code) && { label: 'NÚMERO CONFIRMACIÓN', value: data.confirmation_code || voucher_code, icon: Hash },
+                                                    ].filter(Boolean).map((item, idx) => (
+                                                        <div key={idx} className={styles.hotelCol}>
+                                                            <div className={styles.hotelItemLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                                <item.icon size={12} style={{ color: 'var(--primary-color)' }} />
+                                                                {item.label}
+                                                            </div>
+                                                            <div className={styles.hotelItemVal}>{item.value || '-'}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        /* Legacy single-hotel format */
+                                        <div className={styles.hotelDetailsBox}>
+                                            <div className={styles.hotelHeader}>
+                                                <div className={styles.hotelIcon}><Building size={24} /></div>
+                                                <div>
+                                                    <h3 className={styles.hotelCatTitle}>Datos del Alojamiento</h3>
+                                                    <p className={styles.hotelCatSub}>Información oficial para su check-in</p>
+                                                </div>
+                                            </div>
+                                            <div className={styles.hotelGrid}>
+                                                {hotelInfoItems.map((item, idx) => (
+                                                    <div key={idx} className={styles.hotelCol}>
+                                                        <div className={styles.hotelItemLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                            <item.icon size={12} style={{ color: 'var(--primary-color)' }} />
+                                                            {item.label}
+                                                        </div>
+                                                        {isEditing && !item.readOnly ? (
+                                                            <input className={styles.editInput} value={item.value} onChange={(e) => item.setValue(e.target.value)} placeholder={item.label} style={{ fontSize: '1rem', fontWeight: 600 }} />
+                                                        ) : (
+                                                            <div className={styles.hotelItemVal}>{item.value || '-'}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             )}
 
