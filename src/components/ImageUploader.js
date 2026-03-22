@@ -88,13 +88,23 @@ export default function ImageUploader({
     const [error, setError] = useState('');
     const fileInputRef = useRef(null);
 
+    // Normalizar value para múltiples imágenes
+    const currentImages = multiple ? (Array.isArray(value) ? value : (value ? [value] : [])) : null;
+
     const handleFileChange = async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
-        if (multiple && files.length > maxFiles) {
-            setError(`Puedes subir un máximo de ${maxFiles} archivos a la vez.`);
-            return;
+        if (multiple) {
+            const totalAfterUpload = (currentImages?.length || 0) + files.length;
+            if (totalAfterUpload > maxFiles) {
+                const remaining = maxFiles - (currentImages?.length || 0);
+                setError(remaining <= 0
+                    ? `Ya tienes el máximo de ${maxFiles} imágenes.`
+                    : `Solo puedes añadir ${remaining} imagen${remaining !== 1 ? 'es' : ''} más (máximo ${maxFiles}).`
+                );
+                return;
+            }
         }
 
         // Validar tipos
@@ -174,7 +184,8 @@ export default function ImageUploader({
             }
 
             if (multiple) {
-                onChange(publicUrls);
+                // Añadir nuevas URLs a las existentes
+                onChange([...(currentImages || []), ...publicUrls]);
             } else {
                 onChange(publicUrls[0]);
             }
@@ -306,7 +317,7 @@ export default function ImageUploader({
                 </div>
             )}
 
-            {/* Preview (only for single value) */}
+            {/* Preview: single */}
             {!multiple && value && typeof value === 'string' && (
                 <div style={{ marginTop: '0.75rem', position: 'relative', display: 'inline-block' }}>
                     <img
@@ -332,6 +343,48 @@ export default function ImageUploader({
                     >
                         <X size={12} />
                     </button>
+                </div>
+            )}
+
+            {/* Preview: multiple — galería con botón eliminar por imagen */}
+            {multiple && currentImages && currentImages.length > 0 && (
+                <div style={{
+                    marginTop: '0.75rem',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                }}>
+                    {currentImages.map((url, idx) => (
+                        <div key={idx} style={{ position: 'relative', display: 'inline-block' }}>
+                            <img
+                                src={url}
+                                alt={`Imagen ${idx + 1}`}
+                                style={{
+                                    height: '80px', width: '110px', objectFit: 'cover',
+                                    borderRadius: '8px', border: '1px solid var(--border-color)',
+                                    display: 'block',
+                                }}
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const updated = currentImages.filter((_, i) => i !== idx);
+                                    onChange(updated);
+                                    setError('');
+                                }}
+                                style={{
+                                    position: 'absolute', top: '-8px', right: '-8px',
+                                    background: '#EF4444', color: 'white', border: 'none',
+                                    borderRadius: '50%', width: '22px', height: '22px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer', padding: 0,
+                                }}
+                            >
+                                <X size={12} />
+                            </button>
+                        </div>
+                    ))}
                 </div>
             )}
 
