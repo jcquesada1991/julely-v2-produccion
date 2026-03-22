@@ -74,14 +74,15 @@ export default function Hoteles() {
                     <h2 className={styles.pageTitle} style={{ fontSize: '2rem' }}>Banco de Hoteles</h2>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{hotels.length} hotel{hotels.length !== 1 ? 'es' : ''} registrado{hotels.length !== 1 ? 's' : ''}</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ position: 'relative' }}>
+                <div className={styles.pageHeaderActions}>
+                    <div style={{ position: 'relative', flex: 1 }}>
                         <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                         <input
                             type="text"
                             placeholder="Buscar hotel..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
+                            className={styles.pageHeaderSearch}
                             style={{
                                 padding: '0.6rem 0.75rem 0.6rem 2.25rem',
                                 border: '1px solid var(--border-color)',
@@ -90,12 +91,12 @@ export default function Hoteles() {
                                 color: 'var(--text-primary)',
                                 fontSize: '0.85rem',
                                 outline: 'none',
-                                width: '220px'
+                                width: '100%',
                             }}
                         />
                     </div>
                     {canManage && (
-                        <button className="btn-primary" onClick={handleNew}>
+                        <button className="btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={handleNew}>
                             <Plus size={20} /> Nuevo Hotel
                         </button>
                     )}
@@ -179,7 +180,7 @@ export default function Hoteles() {
                         <label style={labelStyle}>Dirección</label>
                         <input style={inputStyle} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Av. Principal 123, Ciudad" />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className={styles.formGrid2}>
                         <div>
                             <label style={labelStyle}>Teléfono</label>
                             <input style={inputStyle} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 234 567 8900" />

@@ -871,6 +871,41 @@
     }
 }
 
+/* --- Page Header Actions (search + button row) --- */
+.pageHeaderActions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pageHeaderSearch {
+    width: 220px;
+}
+
+.formGrid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .pageHeaderActions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .pageHeaderSearch {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+    }
+
+    .formGrid2 {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* --- Responsive Utilities --- */
 .tableResponsiveWrapper {
     width: 100%;
