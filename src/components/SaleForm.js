@@ -8,7 +8,7 @@ import styles from '@/styles/DashboardV2.module.css';
 const EMPTY_HOTEL_ENTRY = { catalog_id: '', hotel_name: '', hotel_address: '', hotel_phone: '', occupancy: '' };
 
 export default function SaleForm({ onSubmit, onCancel }) {
-    const { destinations, clients, users, itineraries, sales, hotels } = useApp();
+    const { destinations, clients, users, itineraries, sales, hotels, addHotel } = useApp();
     const { currentUser: profile } = useAuth();
     const [formData, setFormData] = useState({
         client_name: '',
@@ -411,9 +411,26 @@ export default function SaleForm({ onSubmit, onCancel }) {
                                     Cancelar
                                 </button>
                                 <button type="button"
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (!newHotel.hotel_name.trim()) return;
-                                        setHotelsList(prev => [...prev, { hotel_name: newHotel.hotel_name, hotel_address: newHotel.hotel_address, hotel_phone: newHotel.hotel_phone, occupancy: newHotel.occupancy }]);
+                                        const normalizedName = newHotel.hotel_name.trim().toLowerCase();
+                                        let hotelId = null;
+                                        const existing = hotels.find(h => h.name?.trim().toLowerCase() === normalizedName);
+                                        if (existing) {
+                                            hotelId = existing.id;
+                                        } else {
+                                            try {
+                                                const created = await addHotel({
+                                                    name: newHotel.hotel_name.trim(),
+                                                    address: newHotel.hotel_address || '',
+                                                    phone: newHotel.hotel_phone || '',
+                                                });
+                                                hotelId = created.id;
+                                            } catch (err) {
+                                                return;
+                                            }
+                                        }
+                                        setHotelsList(prev => [...prev, { id: hotelId, hotel_name: newHotel.hotel_name.trim(), hotel_address: newHotel.hotel_address, hotel_phone: newHotel.hotel_phone, occupancy: newHotel.occupancy }]);
                                         setNewHotel(EMPTY_HOTEL_ENTRY);
                                         setShowAddHotel(false);
                                     }}
