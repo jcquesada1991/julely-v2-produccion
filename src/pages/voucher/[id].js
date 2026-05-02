@@ -900,9 +900,27 @@ export default function Voucher() {
                 <button className={`${styles.btnEdit} ${isEditing ? styles.active : ''}`} onClick={handleToggleEdit}>
                     <Pencil size={18} /> {isEditing ? 'Guardar y Listo' : 'Editar'}
                 </button>
-                <button className={styles.btnDownload} onClick={() => {
-                    if (isEditing) handleToggleEdit().then(() => setTimeout(() => window.print(), 300));
-                    else setTimeout(() => window.print(), 100);
+                <button className={styles.btnDownload} onClick={async () => {
+                    const doDownload = async () => {
+                        const html2pdf = (await import('html2pdf.js')).default;
+                        const container = document.querySelector(`.${styles.voucherContainer}`);
+                        if (!container) return;
+                        container.classList.add(styles.exporting);
+                        try {
+                            await html2pdf().set({
+                                margin: 0,
+                                filename: `voucher-${voucher_code || id}.pdf`,
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' },
+                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+                                pagebreak: { mode: ['css', 'legacy'] }
+                            }).from(container).save();
+                        } finally {
+                            container.classList.remove(styles.exporting);
+                        }
+                    };
+                    if (isEditing) { await handleToggleEdit(); setTimeout(doDownload, 300); }
+                    else { doDownload(); }
                 }}>
                     <Download size={18} /> Descargar PDF
                 </button>

@@ -63,6 +63,21 @@
     }
 }
 
+/* === MODO EXPORT PDF (html2pdf) — quita decoración del wrapper === */
+.voucherContainer.exporting {
+    background: white !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    min-height: 0 !important;
+}
+.voucherContainer.exporting .voucherPage {
+    box-shadow: none !important;
+    margin: 0 !important;
+}
+.voucherContainer.exporting .actions {
+    display: none !important;
+}
+
 /* === HEADER (en cada página excepto cover) === */
 .pageHeader {
     display: flex;
