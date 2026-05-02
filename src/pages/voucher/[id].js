@@ -373,6 +373,92 @@ export default function Voucher() {
     if (effectiveNationality || isEditing) clientInfoItems.push({ label: 'NACIONALIDAD', value: effectiveNationality, setValue: setEditNationality, icon: Globe });
     if (effectivePhone || isEditing) clientInfoItems.push({ label: 'TELÉFONO', value: effectivePhone, setValue: setEditPhone, icon: Phone });
     if (effectiveEmail || isEditing) clientInfoItems.push({ label: 'EMAIL', value: effectiveEmail, setValue: setEditEmail, icon: Mail });
+    // ============== HELPERS V2 ==============
+    const formatDateLong = (d) => {
+        if (!d) return '—';
+        const date = new Date(`${d}T12:00:00`);
+        const day = date.getDate().toString().padStart(2, '0');
+        const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} · ${month} · ${year}`;
+    };
+
+    const tripDays = (() => {
+        if (editTravelDate && editReturnDate) {
+            const d1 = new Date(editTravelDate);
+            const d2 = new Date(editReturnDate);
+            const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+            return diff > 0 ? diff : null;
+        }
+        return null;
+    })();
+    const tripNights = tripDays ? tripDays - 1 : null;
+
+    const tripLabel = (() => {
+        const parts = [];
+        if (data.num_adults > 1 || (data.num_children || 0) > 0) parts.push('VIAJE GRUPAL');
+        else parts.push('VIAJE INDIVIDUAL');
+        if (tripDays) parts.push(`${tripDays} DÍAS / ${tripNights} NOCHES`);
+        return parts.join(' · ');
+    })();
+
+    // Asesor data — siempre del profile registrado en BD (no editable manualmente)
+    // Prioridad: assigned_to (UUID asesor asignado) → created_by (UUID creador) → prepared_by (texto fallback)
+    const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(v);
+    const asesorIdCandidates = [data.assigned_to, data.created_by, data.prepared_by].filter(Boolean);
+    const asesorUuid = asesorIdCandidates.find(isUuid);
+    const asesorProfile = asesorUuid ? users?.find(u => String(u.id) === String(asesorUuid)) : null;
+    // Fallback name si no hay profile: prepared_by string si existe, o "Julely Travels"
+    const preparedByText = asesorIdCandidates.find(v => typeof v === 'string' && !isUuid(v));
+    const asesorName = asesorProfile?.full_name || preparedByText || 'Julely Travels';
+    const asesorEmail = asesorProfile?.email || '';
+    const asesorRole = asesorProfile?.role || 'Asesor';
+    const asesorInitials = (asesorName || 'J').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+    const destTitleClean = (dest.title || '').replace(/\s*\(Eliminado\)\s*$/, '').trim();
+
+    // Smart chunking V2: pack ~4 units per page (big day = 2 units, compact day = 1)
+    const isBigDay = (item) => item && (!!item.image || (item.images && item.images.length > 0) || (item.description || '').length > 280);
+    const buildItineraryPagesV2 = (items) => {
+        const pages = [];
+        let current = [];
+        let used = 0;
+        const MAX = 4;
+        for (const d of items) {
+            const cost = isBigDay(d) ? 2 : 1;
+            if (used + cost > MAX && current.length > 0) {
+                pages.push(current);
+                current = [d];
+                used = cost;
+            } else {
+                current.push(d);
+                used += cost;
+            }
+        }
+        if (current.length > 0) pages.push(current);
+        return pages.length > 0 ? pages : [[]];
+    };
+    const itineraryPagesV2 = hasItinerary ? buildItineraryPagesV2(editItinerary) : [];
+
+    const renderImageBlock = (item) => {
+        if (item.images && item.images.length > 1) {
+            return (
+                <div className={styles.dayImageStack}>
+                    {item.images.slice(0, 2).map((img, i) => (
+                        <img key={i} src={img.url || img} alt={item.name || item.title} />
+                    ))}
+                </div>
+            );
+        }
+        const url = item.image || (item.images && item.images[0]?.url);
+        return url ? <img className={styles.dayImage} src={url} alt={item.name || item.title} /> : null;
+    };
+
+    // Total pages count for footer numbering
+    const totalPages = 1 + 1 + itineraryPagesV2.length + (hasNotes ? displayedNotesPages.length : 0) + displayedTermsPages.length;
+    let pageCounter = { n: 0 };
+    const nextPageNum = () => { pageCounter.n += 1; return pageCounter.n; };
 
     return (
         <>
@@ -381,550 +467,444 @@ export default function Voucher() {
             </Head>
 
             <div className={styles.voucherContainer}>
-                {/* --- PAGE 1: COVER --- */}
-                <div className={styles.voucherPage}>
 
-                    <div className={styles.pagePadding}>
-                        {/* 1. Top Header */}
-                        <div className={styles.topHeader}>
-                            <div className={styles.brandInfo}>
-                                <img src="/images/logo_transparent.png" className={styles.logoImage} alt="Julely" style={{ objectFit: 'contain' }} />
-                                {/* Slogan is already integrated or handled globally, just keeping logo top-left */}
-                            </div>
-                            {/* Removed NÚMERO DE CONFIRMACIÓN code block here */}
+                {/* ============== PAGE 1 — COVER ============== */}
+                <div className={`${styles.voucherPage} ${styles.coverPage}`}>
+                    {(() => { nextPageNum(); return null; })()}
+                    <div className={styles.coverHero}>
+                        <img
+                            src={dest.hero_image_url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2670&auto=format&fit=crop'}
+                            alt={destTitleClean}
+                        />
+                        <div className={styles.coverBrand}>
+                            <img src="/images/logo_transparent.png" alt="Julely" />
                         </div>
-
-                        {/* 2. Hero Image Banner */}
-                        <div className={styles.heroBanner} style={{ marginTop: '-1rem' }}>
-                            <img
-                                src={dest.hero_image_url}
-                                className={styles.heroImg}
-                                alt={dest.title}
-                                onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2670&auto=format&fit=crop'}
-                            />
-                            <div className={styles.heroOverlay}></div>
-                            <div className={styles.heroText}>
-                                <div className={styles.heroBadge}>Voucher Oficial</div>
-                                <h2 className={styles.heroTitle}>
-                                    {dest.title?.includes('(Eliminado)') ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-                                            <span style={{ textDecoration: 'line-through', opacity: 0.8 }}>
-                                                {dest.title.replace(' (Eliminado)', '')}
-                                            </span>
-                                            <span style={{ fontSize: '0.45em', background: 'rgba(239, 68, 68, 0.8)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: 600, letterSpacing: '1px' }}>
-                                                ELIMINADO
-                                            </span>
-                                        </div>
-                                    ) : dest.title}
-                                </h2>
-                            </div>
+                        <div className={styles.coverMeta}>
+                            <div className={styles.coverBadge}>VOUCHER OFICIAL</div>
+                            <div className={styles.coverCode}>{voucher_code}</div>
                         </div>
-
-                        {/* 3. Essential Trip Info Grid */}
-                        <div className={styles.infoGrid} style={{ gridTemplateColumns: showPrice ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)' }}>
-
-                            {/* Traveler Details */}
-                            <div className={`${styles.infoCard} ${styles.cardTraveler}`}>
-                                <div className={styles.infoCardHeader}>
-                                    <User size={16} />
-                                    <h3>Viajero Principal</h3>
-                                </div>
-                                <h4 className={styles.travelerName}>
-                                    {isEditing ? (
-                                        <input className={styles.editInput} value={editClientName} onChange={(e) => setEditClientName(e.target.value)} placeholder="Nombre Cliente" />
-                                    ) : (editClientName || "-")}
-                                </h4>
-                                <p className={styles.travelerSub}>
-                                    Pasaporte: {isEditing ? (
-                                        <input className={styles.editInput} value={editPassport} onChange={(e) => setEditPassport(e.target.value)} style={{ width: '80px' }} placeholder="..." />
-                                    ) : (editPassport || "-")}
-                                </p>
-                                <div className={styles.cardFooter}>
-                                    <div className={styles.cardFooterLabel}>Total de Pasajeros</div>
-                                    <div className={styles.cardFooterVal}>
-                                        {isEditing ? (
-                                            <div style={{ display: 'flex', gap: '0.25rem', flexDirection: 'column' }}>
-                                                <select
-                                                    className={styles.editInput}
-                                                    value={editAdults}
-                                                    onChange={(e) => handlePaxChange('adults', Number(e.target.value))}
-                                                    style={{ padding: '4px', fontSize: '0.8rem' }}
-                                                >
-                                                    {[...Array(10)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1} Adulto(s)</option>)}
-                                                </select>
-                                                <select
-                                                    className={styles.editInput}
-                                                    value={editChildren}
-                                                    onChange={(e) => handlePaxChange('children', Number(e.target.value))}
-                                                    style={{ padding: '4px', fontSize: '0.8rem' }}
-                                                >
-                                                    {[...Array(11)].map((_, i) => <option key={i} value={i}>{i} Menor(es)</option>)}
-                                                </select>
-                                            </div>
-                                        ) : (
-                                            `${editAdults} Adulto(s)${editChildren > 0 ? `, ${editChildren} Menor(es)` : ''}`
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Travel Schedule */}
-                            <div className={`${styles.infoCard} ${styles.cardSchedule}`}>
-                                <div className={styles.infoCardHeader}>
-                                    <Calendar size={16} />
-                                    <h3>Itinerario de Viaje</h3>
-                                </div>
-                                <div className={styles.scheduleRow}>
-                                    <span className={styles.scheduleLabel}>Fecha de Salida</span>
-                                    <span className={styles.scheduleVal}>
-                                        {isEditing ? (
-                                            <input
-                                                type="date"
-                                                className={styles.editInput}
-                                                value={editTravelDate}
-                                                onChange={(e) => setEditTravelDate(e.target.value)}
-                                            />
-                                        ) : (
-                                            editTravelDate
-                                                ? new Date(`${editTravelDate}T12:00:00`).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                                                : "-"
-                                        )}
-                                    </span>
-                                </div>
-                                <div className={styles.scheduleRow} style={{ marginTop: '0.25rem' }}>
-                                    <span className={styles.scheduleLabel}>Fecha de Regreso</span>
-                                    <span className={styles.scheduleVal}>
-                                        {isEditing ? (
-                                            <input
-                                                type="date"
-                                                className={styles.editInput}
-                                                value={editReturnDate}
-                                                onChange={(e) => setEditReturnDate(e.target.value)}
-                                            />
-                                        ) : (
-                                            editReturnDate
-                                                ? new Date(`${editReturnDate}T12:00:00`).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                                                : "-"
-                                        )}
-                                    </span>
-                                </div>
-                                <div className={styles.scheduleRow} style={{ marginTop: '0.25rem' }}>
-                                    <span className={styles.scheduleLabel}>Fecha de Venta</span>
-                                    <span className={styles.scheduleVal}>{formattedDate}</span>
-                                </div>
-                                <div className={styles.cardFooter}>
-                                    <div className={styles.cardFooterLabel}>Vendedor</div>
-                                    <div className={styles.cardFooterVal}>
-                                        {isEditing ? (
-                                            <input className={styles.editInput} value={editPreparedBy} onChange={(e) => setEditPreparedBy(e.target.value)} placeholder="Vendedor" />
-                                        ) : (editPreparedBy || 'Julely Travel')}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Payment Summary */}
-                            {showPrice && (
-                                <div className={`${styles.infoCard} ${styles.cardPricing}`}>
-                                    <div>
-                                        <div className={styles.infoCardHeader}>
-                                            <DollarSign size={16} />
-                                            <h3>Resumen de Pago</h3>
-                                        </div>
-                                        <div className={styles.priceLabel}>Reserva Total</div>
-
-                                        <div className={styles.priceVal}>
-                                            {isEditing ? (
-                                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                    $<input className={styles.editInput} value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: '100px', fontSize: '1.5rem', fontWeight: 'bold' }} placeholder="0.00" />
-                                                </div>
-                                            ) : `$${Number(editPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-                                        </div>
-
-                                    </div>
-                                    <div className={styles.cardFooter}>
-                                        <CheckSquare size={14} />
-                                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Reserva Confirmada</span>
-                                    </div>
-                                </div>
-                            )}
-
-                        </div>
-
-                        {/* Additional Info Block for Page 1 */}
-                        <div className={styles.extraInfoGrid} style={{ marginTop: '2rem' }}>
-                            {clientInfoItems.map((item, idx) => (
-                                <div key={idx} className={styles.extraInfoItem}>
-                                    <div className={styles.extraIcon}><item.icon size={20} /></div>
-                                    <div className={styles.extraLabel}>{item.label}</div>
-                                    {isEditing && !item.readOnly ? (
-                                        <input
-                                            className={styles.editInput}
-                                            style={{ textAlign: 'center' }}
-                                            value={item.value}
-                                            onChange={(e) => item.setValue(e.target.value)}
-                                        />
-                                    ) : (
-                                        <div className={styles.extraVal}>{item.value || "-"}</div>
-                                    )}
-                                </div>
-                            ))}
+                        <div className={styles.coverText}>
+                            <div className={styles.coverLabel}>{tripLabel}</div>
+                            <h1 className={styles.coverTitle}>{destTitleClean}.</h1>
+                            {dest.subtitle && <div className={styles.coverSubtitle}>{dest.subtitle}</div>}
                         </div>
                     </div>
-                </div>
 
-                {/* --- PAGE 2: DETAILS (Hotel, Includes, Description) --- */}
-                {(hotelInfoItems.length > 0 || hasChecklist || hasDescription) && (
-                    <div className={styles.voucherPage}>
-                        <div className={styles.mainContent}>
-
-                            {/* Hotel Details — múltiples alojamientos */}
-                            {(editHotels.length > 0 || hotelInfoItems.length > 0) && (
-                                <div className={styles.sectionBlock}>
-                                    {editHotels.length > 0 ? (
-                                        /* New multi-hotel format */
-                                        editHotels.map((hotel, hIdx) => (
-                                            <div key={hIdx} className={styles.hotelDetailsBox} style={hIdx > 0 ? { marginTop: '1rem' } : {}}>
-                                                <div className={styles.hotelHeader}>
-                                                    <div className={styles.hotelIcon}><Building size={24} /></div>
-                                                    <div>
-                                                        <h3 className={styles.hotelCatTitle}>
-                                                            {editHotels.length > 1 ? `Alojamiento ${hIdx + 1}` : 'Datos del Alojamiento'}
-                                                        </h3>
-                                                        <p className={styles.hotelCatSub}>Información oficial para su check-in</p>
-                                                    </div>
-                                                </div>
-                                                <div className={styles.hotelGrid}>
-                                                    {[
-                                                        { label: 'HOTEL / ALOJAMIENTO', value: hotel.hotel_name, icon: Building },
-                                                        hotel.hotel_address && { label: 'DIRECCIÓN', value: hotel.hotel_address, icon: MapPin },
-                                                        hotel.hotel_phone && { label: 'TELÉFONO HOTEL', value: hotel.hotel_phone, icon: Phone },
-                                                        hotel.occupancy && { label: 'OCUPACIÓN', value: hotel.occupancy, icon: User },
-                                                        hIdx === 0 && (data.confirmation_code || voucher_code) && { label: 'NÚMERO CONFIRMACIÓN', value: data.confirmation_code || voucher_code, icon: Hash },
-                                                    ].filter(Boolean).map((item, idx) => (
-                                                        <div key={idx} className={styles.hotelCol}>
-                                                            <div className={styles.hotelItemLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                                                <item.icon size={12} style={{ color: 'var(--primary-color)' }} />
-                                                                {item.label}
-                                                            </div>
-                                                            <div className={styles.hotelItemVal}>{item.value || '-'}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        /* Legacy single-hotel format */
-                                        <div className={styles.hotelDetailsBox}>
-                                            <div className={styles.hotelHeader}>
-                                                <div className={styles.hotelIcon}><Building size={24} /></div>
-                                                <div>
-                                                    <h3 className={styles.hotelCatTitle}>Datos del Alojamiento</h3>
-                                                    <p className={styles.hotelCatSub}>Información oficial para su check-in</p>
-                                                </div>
-                                            </div>
-                                            <div className={styles.hotelGrid}>
-                                                {hotelInfoItems.map((item, idx) => (
-                                                    <div key={idx} className={styles.hotelCol}>
-                                                        <div className={styles.hotelItemLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                                            <item.icon size={12} style={{ color: 'var(--primary-color)' }} />
-                                                            {item.label}
-                                                        </div>
-                                                        {isEditing && !item.readOnly ? (
-                                                            <input className={styles.editInput} value={item.value} onChange={(e) => item.setValue(e.target.value)} placeholder={item.label} style={{ fontSize: '1rem', fontWeight: 600 }} />
-                                                        ) : (
-                                                            <div className={styles.hotelItemVal}>{item.value || '-'}</div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* What's Included */}
-                            {hasChecklist && (
-                                <div className={styles.sectionBlock}>
-                                    <h3 className={styles.sectionTitle}>
-                                        <CheckSquare size={20} />
-                                        QUÉ INCLUYE SU VIAJE
-                                    </h3>
-                                    <div className={styles.checklistGrid}>
-                                        {editChecklist.map((item, idx) => (
-                                            <div key={idx} className={styles.checkItem}>
-                                                <div className={styles.customCheck}>✓</div>
-                                                <div style={{ flex: 1 }}>
-                                                    {isEditing ? (
-                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                            <input
-                                                                className={styles.editInput}
-                                                                value={item}
-                                                                onChange={(e) => updateChecklistItem(idx, e.target.value)}
-                                                            />
-                                                            <button className={styles.editRemoveBtn} onClick={() => removeChecklistItem(idx)} type="button">✖</button>
-                                                        </div>
-                                                    ) : (
-                                                        item
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {isEditing && (
-                                            <button className={styles.editAddBtn} onClick={addChecklistItem} type="button" style={{ gridColumn: '1 / -1' }}>
-                                                + Añadir Ítem
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Destination Description */}
-                            {hasDescription && (
-                                <div className={styles.sectionBlock}>
-                                    <h3 className={styles.sectionTitle}>
-                                        <Globe size={20} />
-                                        SOBRE EL DESTINO
-                                    </h3>
-                                    <div className={styles.descriptionText} style={{ whiteSpace: 'pre-line' }}>
-                                        {isEditing ? (
-                                            <textarea
-                                                className={styles.editTextarea}
-                                                value={editDescription}
-                                                onChange={(e) => setEditDescription(e.target.value)}
-                                                rows={5}
-                                            />
-                                        ) : (
-                                            editDescription
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                        </div>
-                    </div>
-                )}
-
-                {/* --- PAGE 3+: ITINERARY --- */}
-                {hasItinerary && itineraryPages.map((pageItems, pageIdx) => (
-                    <div className={styles.voucherPage} key={`itinerary-page-${pageIdx}`}>
-                        <div className={styles.mainContent}>
-                            <div className={styles.sectionBlock}>
-                                {pageIdx === 0 && (
-                                    <h3 className={styles.sectionTitle}>
-                                        <Calendar size={20} />
-                                        ITINERARIO DETALLADO
-                                    </h3>
-                                )}
-                                <div className={styles.itineraryList}>
-                                    {pageItems.map((item, idxInPage) => {
-                                        const idx = editItinerary.indexOf(item);
-                                        return (
-                                            <div key={idx} className={styles.itineraryItem}>
-                                                <div className={styles.dayBadge}>DÍA {item.day || idx + 1}</div>
-                                                <div className={styles.itineraryContent}>
-                                                    {isEditing ? (
-                                                        <>
-                                                            <input
-                                                                className={styles.editInput}
-                                                                value={item.name || item.title}
-                                                                onChange={(e) => {
-                                                                    const updated = [...editItinerary];
-                                                                    updated[idx] = { ...updated[idx], name: e.target.value };
-                                                                    setEditItinerary(updated);
-                                                                }}
-                                                                style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}
-                                                            />
-                                                            <textarea
-                                                                className={styles.editTextarea}
-                                                                value={item.description || ''}
-                                                                onChange={(e) => {
-                                                                    const updated = [...editItinerary];
-                                                                    updated[idx] = { ...updated[idx], description: e.target.value };
-                                                                    setEditItinerary(updated);
-                                                                }}
-                                                                style={{ minHeight: '60px', padding: '0.5rem', marginBottom: '1rem' }}
-                                                            />
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <h4 className={styles.itineraryTitle}>{item.name || item.title}</h4>
-                                                            {item.description && (
-                                                                <p className={styles.itineraryDesc}>{item.description}</p>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                    {(item.images?.length > 0 || item.image) && (
-                                                        <div className={styles.itineraryImageWrapper} style={item.images?.length > 1 ? { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' } : {}}>
-                                                            {item.images?.length > 0
-                                                                ? item.images.map((img, imgIdx) => (
-                                                                    <img key={imgIdx} src={img.url} alt={item.name || item.title} style={item.images.length > 1 ? { flex: '1 1 45%', width: 'auto', minWidth: 0, objectFit: 'cover', borderRadius: '6px' } : {}} />
-                                                                ))
-                                                                : <img src={item.image} alt={item.name || item.title} />
-                                                            }
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {isEditing && (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', justifyContent: 'center', marginLeft: '1rem' }}>
-                                                        <button className={styles.editRemoveBtn} onClick={() => moveItineraryItemUp(idx)} type="button" disabled={idx === 0} style={{ opacity: idx === 0 ? 0.3 : 1, color: 'var(--primary-color)', background: 'rgba(127,19,236,0.1)' }}>
-                                                            <ArrowUp size={16} />
-                                                        </button>
-                                                        <button className={styles.editRemoveBtn} onClick={() => moveItineraryItemDown(idx)} type="button" disabled={idx === editItinerary.length - 1} style={{ opacity: idx === editItinerary.length - 1 ? 0.3 : 1, color: 'var(--primary-color)', background: 'rgba(127,19,236,0.1)' }}>
-                                                            <ArrowDown size={16} />
-                                                        </button>
-                                                        <button className={styles.editRemoveBtn} onClick={() => removeItineraryItem(idx)} type="button" style={{ marginTop: '0.5rem' }}>
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {isEditing && pageIdx === itineraryPages.length - 1 && (
-                                    <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                        <select
-                                            className={styles.editInput}
-                                            value=""
-                                            onChange={handleAddExcursion}
-                                            style={{ flex: 1, padding: '0.75rem', background: 'rgba(127,19,236,0.05)', borderRadius: '8px', border: '1px dashed var(--primary-color)' }}
-                                        >
-                                            <option value="">+ Añadir Día / Excursión...</option>
-                                            {availableExcursions.map(exc => (
-                                                <option key={exc.id} value={exc.id}>{exc.name}</option>
-                                            ))}
-                                            <option value="custom">Día Libre / Personalizado</option>
-                                        </select>
-                                    </div>
-                                )}
+                    <div className={`${styles.coverInfoStrip} ${!showPrice ? styles.noPrice : ''}`}>
+                        <div className={styles.infoBlock}>
+                            <div className={styles.label}>VIAJERO PRINCIPAL</div>
+                            <div className={styles.value}>
+                                {isEditing
+                                    ? <input className={styles.editInput} value={editClientName} onChange={(e) => setEditClientName(e.target.value)} placeholder="Nombre del viajero" />
+                                    : (editClientName || '—')}
+                            </div>
+                            <div className={styles.sub}>
+                                {editAdults} Adulto(s){editChildren > 0 ? `, ${editChildren} Menor(es)` : ''}{editOccupancy ? ` · ${editOccupancy}` : ''}
                             </div>
                         </div>
-                    </div>
-                ))}
-
-                {/* --- PAGE 4: NOTES --- */}
-                {hasNotes && displayedNotesPages.map((pageText, pageIdx) => (
-                    <div className={styles.voucherPage} key={`notes-page-${pageIdx}`}>
-                        <div className={styles.pagePadding} style={{ paddingTop: '3rem', flex: 1 }}>
-                            <div className={styles.sectionBlock}>
-                                {pageIdx === 0 && (
-                                    <h3 className={styles.sectionTitle}>
-                                        <AlignLeft size={20} />
-                                        NOTAS ADICIONALES
-                                    </h3>
-                                )}
-                                <div className={styles.descriptionText} style={{ whiteSpace: 'pre-line' }}>
-                                    {isEditing && pageIdx === 0 ? (
-                                        <textarea
-                                            className={styles.editTextarea}
-                                            value={editNotes}
-                                            onChange={(e) => setEditNotes(e.target.value)}
-                                            rows={12}
-                                            placeholder="Escriba aquí notas adicionales para el cliente..."
-                                        />
-                                    ) : (!isEditing || pageIdx > 0 ? pageText : null)}
-                                </div>
+                        <div className={styles.infoBlock}>
+                            <div className={styles.label}>FECHA DE SALIDA</div>
+                            <div className={styles.value}>
+                                {isEditing
+                                    ? <input type="date" className={styles.editInput} value={editTravelDate} onChange={(e) => setEditTravelDate(e.target.value)} />
+                                    : formatDateLong(editTravelDate)}
                             </div>
+                            <div className={styles.sub}>{tripDays ? `${tripDays} días / ${tripNights} noches` : 'Duración por confirmar'}</div>
                         </div>
-                    </div>
-                ))}
-
-                {/* --- MULTI-PAGE: TERMS & CONDITIONS --- */}
-                {hasTerms && displayedTermsPages.map((pageText, pageIdx) => (
-                    <div className={styles.voucherPage} key={`terms-page-${pageIdx}`}>
-                        <div className={styles.pagePadding} style={{ paddingTop: '3rem', flex: 1 }}>
-                            <div className={styles.sectionBlock}>
-                                {pageIdx === 0 && (
-                                    <h3 className={styles.sectionTitle}>
-                                        <FileText size={20} />
-                                        TÉRMINOS Y CONDICIONES
-                                    </h3>
-                                )}
-                                <div className={styles.termsText} style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
-                                    {isEditing && pageIdx === 0 ? (
-                                        <textarea
-                                            className={styles.editTextarea}
-                                            value={editTerms}
-                                            onChange={(e) => setEditTerms(e.target.value)}
-                                            rows={25}
-                                            style={{ height: '700px' }}
-                                        />
-                                    ) : (
-                                        !isEditing || pageIdx > 0 ? pageText : null
-                                    )}
-                                </div>
-                            </div>
+                        <div className={styles.infoBlock}>
+                            <div className={styles.label}>EMITIDO EL</div>
+                            <div className={styles.value}>{formattedDate}</div>
+                            <div className={styles.sub}>Reserva confirmada</div>
                         </div>
-
-                        {/* Footer on Last Page */}
-                        {pageIdx === displayedTermsPages.length - 1 && (
-                            <div className={styles.pagePadding} style={{ paddingBottom: '1.5rem', paddingTop: '0', marginTop: 'auto' }}>
-                                <div className={styles.pageFooter} style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', position: 'relative' }}>
-                                    <div className={styles.footerNote}>
-                                        DOCUMENTO DE VIAJE OFICIAL<br />
-                                        Sujeto a los términos y condiciones estipulados. Valide la información antes de su viaje.
-                                    </div>
-
-                                    {/* Signature fixed on bottom right */}
-                                    <div className={styles.printSignature}>
-                                        <img src="/images/footer_signature_v2.jpg" alt="Signature" />
-                                    </div>
+                        {showPrice && (
+                            <div className={styles.infoBlock}>
+                                <div className={styles.label}>RESERVA TOTAL</div>
+                                <div className={`${styles.value} ${styles.priceVal}`}>
+                                    {isEditing
+                                        ? <span>$<input className={styles.editInput} value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: '90px', display: 'inline-block' }} /></span>
+                                        : `$${Number(editPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
                                 </div>
+                                <div className={styles.sub}>USD · {isEditing ? 'Editable' : 'Confirmada'}</div>
                             </div>
                         )}
                     </div>
-                ))}
-            </div>
 
-            <div className={styles.actions}>
-                <button className={styles.btnBack} onClick={() => router.back()}>
-                    <ChevronLeft size={20} /> Volver
-                </button>
-                {isEditing && (
-                    <div style={{
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        background: 'var(--bg-card)', padding: '0.4rem 1rem',
-                        borderRadius: '99px', border: '1px solid var(--border-color)'
-                    }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {showPrice ? <DollarSign size={16} /> : <EyeOff size={16} />}
-                            Precio Visible
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => setShowPrice(!showPrice)}
-                            style={{
-                                width: '40px', height: '22px', borderRadius: '11px',
-                                border: 'none', cursor: 'pointer', position: 'relative',
-                                background: showPrice ? 'var(--primary-color)' : 'rgba(255,255,255,0.2)',
-                                transition: 'background 0.3s',
-                                padding: 0,
-                                marginLeft: '8px'
-                            }}
-                        >
-                            <div style={{
-                                width: '16px', height: '16px', borderRadius: '50%',
-                                background: 'white',
-                                position: 'absolute', top: '3px',
-                                left: showPrice ? '21px' : '3px',
-                                transition: 'left 0.3s',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                            }} />
-                        </button>
+                    <div className={styles.coverBody}>
+                        <div className={styles.coverSection}>
+                            <h3>Datos del pasajero</h3>
+                            <div className={styles.personalGrid}>
+                                <div className={styles.personalItem}>
+                                    <div className={styles.lbl}>Pasaporte</div>
+                                    <div className={styles.val}>
+                                        {isEditing
+                                            ? <input className={styles.editInput} value={editPassport} onChange={(e) => setEditPassport(e.target.value)} />
+                                            : (editPassport || '—')}
+                                    </div>
+                                </div>
+                                <div className={styles.personalItem}>
+                                    <div className={styles.lbl}>Nacionalidad</div>
+                                    <div className={styles.val}>
+                                        {isEditing
+                                            ? <input className={styles.editInput} value={editNationality} onChange={(e) => setEditNationality(e.target.value)} />
+                                            : (editNationality || '—')}
+                                    </div>
+                                </div>
+                                <div className={styles.personalItem}>
+                                    <div className={styles.lbl}>Teléfono</div>
+                                    <div className={styles.val}>
+                                        {isEditing
+                                            ? <input className={styles.editInput} value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+                                            : (editPhone || '—')}
+                                    </div>
+                                </div>
+                                <div className={styles.personalItem}>
+                                    <div className={styles.lbl}>Email</div>
+                                    <div className={`${styles.val} ${styles.valEmail}`}>
+                                        {isEditing
+                                            ? <input className={styles.editInput} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                                            : (editEmail || '—')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={styles.coverSection}>
+                            <h3>Asesor de viaje</h3>
+                            <div className={styles.asesorCard}>
+                                <div className={styles.asesorAvatar}>{asesorInitials}</div>
+                                <div className={styles.asesorInfo}>
+                                    <div className={styles.asesorTopLabel}>PREPARADO POR</div>
+                                    <div className={styles.asesorName}>{asesorName}</div>
+                                    <div className={styles.asesorMeta}>
+                                        {asesorRole}{asesorEmail ? ` · ${asesorEmail}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            {isEditing && (
+                                <div style={{ fontSize: '9px', color: 'var(--ink-soft)', marginTop: '6px', fontStyle: 'italic', textAlign: 'right' }}>
+                                    El asesor se asigna automáticamente del usuario que crea la venta · No editable
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={styles.coverFooterStrip}>
+                        <div><strong>JULELY TRAVELS</strong> &nbsp;·&nbsp; info@julely.com &nbsp;·&nbsp; 939-525-0701 &nbsp;·&nbsp; www.julelyapp.com</div>
+                        <div>Pág. 1 / {totalPages}</div>
+                    </div>
+                </div>
+
+                {/* ============== PAGE 2 — DETAILS ============== */}
+                {(editHotels.length > 0 || editHotel || hasChecklist || hasDescription) && (
+                    <div className={styles.voucherPage}>
+                        {(() => { nextPageNum(); return null; })()}
+                        <div className={styles.pageHeader}>
+                            <img src="/images/logo_transparent.png" alt="Julely" />
+                            <div className={styles.voucherIdLabel}>VOUCHER &nbsp;<strong>{voucher_code}</strong></div>
+                        </div>
+
+                        {(editHotels.length > 0 || editHotel) && (
+                            <div className={styles.section}>
+                                <div className={styles.sectionTitle}>Su alojamiento</div>
+                                <div className={styles.sectionSubtitle}>{editHotels.length > 1 ? 'Hoteles reservados' : 'Hotel reservado'}</div>
+                                {editHotels.length > 0 ? editHotels.map((h, hIdx) => (
+                                    <div key={hIdx} className={styles.hotelCard}>
+                                        <div className={styles.hotelName}>{h.hotel_name || 'Hotel por confirmar'}</div>
+                                        <div className={styles.hotelTag}>{editHotels.length > 1 ? `Alojamiento ${hIdx + 1} · ` : ''}Información oficial para su check-in</div>
+                                        <div className={styles.hotelGrid}>
+                                            {h.hotel_address && <div className={styles.hotelItem}><div className={styles.lbl}>Dirección</div><div className={styles.val}>{h.hotel_address}</div></div>}
+                                            {h.hotel_phone && <div className={styles.hotelItem}><div className={styles.lbl}>Teléfono</div><div className={styles.val}>{h.hotel_phone}</div></div>}
+                                            {h.occupancy && <div className={styles.hotelItem}><div className={styles.lbl}>Ocupación</div><div className={styles.val}>{h.occupancy}</div></div>}
+                                            {hIdx === 0 && editConfirmation && <div className={styles.hotelItem}><div className={styles.lbl}>Confirmación interna</div><div className={styles.val}>{editConfirmation}</div></div>}
+                                            {hIdx === 0 && voucher_code && <div className={styles.hotelItem}><div className={styles.lbl}>Voucher</div><div className={styles.val}>{voucher_code}</div></div>}
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className={styles.hotelCard}>
+                                        <div className={styles.hotelName}>{editHotel || 'Hotel por confirmar'}</div>
+                                        <div className={styles.hotelTag}>Información oficial para su check-in</div>
+                                        <div className={styles.hotelGrid}>
+                                            {editHotelAddress && <div className={styles.hotelItem}><div className={styles.lbl}>Dirección</div><div className={styles.val}>{editHotelAddress}</div></div>}
+                                            {editHotelPhone && <div className={styles.hotelItem}><div className={styles.lbl}>Teléfono</div><div className={styles.val}>{editHotelPhone}</div></div>}
+                                            {editOccupancy && <div className={styles.hotelItem}><div className={styles.lbl}>Ocupación</div><div className={styles.val}>{editOccupancy}</div></div>}
+                                            {editConfirmation && <div className={styles.hotelItem}><div className={styles.lbl}>Confirmación interna</div><div className={styles.val}>{editConfirmation}</div></div>}
+                                            {voucher_code && <div className={styles.hotelItem}><div className={styles.lbl}>Voucher</div><div className={styles.val}>{voucher_code}</div></div>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {hasChecklist && (
+                            <div className={styles.section}>
+                                <div className={styles.sectionTitle}>Qué incluye su viaje</div>
+                                <div className={styles.sectionSubtitle}>Servicios cubiertos por el paquete</div>
+                                <div className={styles.includesGrid}>
+                                    {editChecklist.map((item, idx) => (
+                                        <div key={idx} className={styles.includeItem}>
+                                            <div className={styles.includeCheck}>✓</div>
+                                            <div style={{ flex: 1 }}>
+                                                {isEditing ? (
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <input className={styles.editInput} value={item} onChange={(e) => updateChecklistItem(idx, e.target.value)} />
+                                                        <button className={styles.editRemoveBtn} onClick={() => removeChecklistItem(idx)} type="button">✖</button>
+                                                    </div>
+                                                ) : item}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isEditing && (
+                                        <button className={styles.editAddBtn} onClick={addChecklistItem} type="button" style={{ gridColumn: '1 / -1' }}>+ Añadir ítem</button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {hasDescription && (
+                            <div className={styles.section}>
+                                <div className={styles.sectionTitle}>Sobre {destTitleClean}</div>
+                                <div className={styles.sectionSubtitle}>El destino que la espera</div>
+                                <div className={styles.destinationText}>
+                                    {isEditing
+                                        ? <textarea className={styles.editTextarea} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={6} />
+                                        : editDescription}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className={styles.pageFooter}>
+                            <div className={styles.legalLine}><span className={styles.brandName}>Julely Travels</span> · Documento oficial sujeto a términos y condiciones.</div>
+                            <div className={styles.pageNum}>Pág. {pageCounter.n} / {totalPages}</div>
+                        </div>
                     </div>
                 )}
-                <button
-                    className={`${styles.btnEdit} ${isEditing ? styles.active : ''}`}
-                    onClick={handleToggleEdit}
-                >
+
+                {/* ============== ITINERARY PAGES ============== */}
+                {hasItinerary && itineraryPagesV2.map((pageItems, pageIdx) => (
+                    <div key={`itinerary-${pageIdx}`} className={styles.voucherPage}>
+                        {(() => { nextPageNum(); return null; })()}
+                        <div className={styles.pageHeader}>
+                            <img src="/images/logo_transparent.png" alt="Julely" />
+                            <div className={styles.voucherIdLabel}>VOUCHER &nbsp;<strong>{voucher_code}</strong></div>
+                        </div>
+
+                        {pageIdx === 0 && (
+                            <div className={styles.section} style={{ marginBottom: '14px' }}>
+                                <div className={styles.sectionTitle}>Itinerario detallado</div>
+                                <div className={styles.sectionSubtitle}>Su viaje día por día</div>
+                            </div>
+                        )}
+
+                        {pageItems.map((item) => {
+                            const realIdx = editItinerary.indexOf(item);
+                            const dayNum = item.day || (realIdx + 1);
+                            const dayNumStr = String(dayNum).padStart(2, '0');
+                            const big = isBigDay(item);
+                            const hasImg = !!item.image || (item.images && item.images.length > 0);
+
+                            if (!big) {
+                                // COMPACT
+                                return (
+                                    <div key={realIdx} className={`${styles.itineraryDay} ${styles.compact}`}>
+                                        <div className={styles.dayTextBlock}>
+                                            <div className={styles.dayBadge}><span className={styles.dayNum}>{dayNumStr}</span> &nbsp; DÍA</div>
+                                            {isEditing ? (
+                                                <input
+                                                    className={styles.editInput}
+                                                    value={item.name || item.title || ''}
+                                                    onChange={(e) => {
+                                                        const upd = [...editItinerary];
+                                                        upd[realIdx] = { ...upd[realIdx], name: e.target.value };
+                                                        setEditItinerary(upd);
+                                                    }}
+                                                    style={{ flex: 1 }}
+                                                />
+                                            ) : (
+                                                <div className={styles.dayTitleInline}>{item.name || item.title}</div>
+                                            )}
+                                            {!isEditing && (
+                                                <div className={styles.dayDescInline}>{item.description || 'Día de tránsito.'}</div>
+                                            )}
+                                            {isEditing && (
+                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                    <button className={styles.editRemoveBtn} onClick={() => moveItineraryItemUp(realIdx)} disabled={realIdx === 0} type="button" style={{ opacity: realIdx === 0 ? 0.3 : 1 }}><ArrowUp size={14} /></button>
+                                                    <button className={styles.editRemoveBtn} onClick={() => moveItineraryItemDown(realIdx)} disabled={realIdx === editItinerary.length - 1} type="button" style={{ opacity: realIdx === editItinerary.length - 1 ? 0.3 : 1 }}><ArrowDown size={14} /></button>
+                                                    <button className={styles.editRemoveBtn} onClick={() => removeItineraryItem(realIdx)} type="button"><X size={14} /></button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // BIG DAY (with or without image)
+                            return (
+                                <div key={realIdx} className={`${styles.itineraryDay} ${!hasImg ? styles.noImage : ''}`}>
+                                    {hasImg && renderImageBlock(item)}
+                                    <div className={styles.dayTextBlock}>
+                                        <div className={styles.dayBadge}><span className={styles.dayNum}>{dayNumStr}</span> &nbsp; DÍA</div>
+                                        {isEditing ? (
+                                            <>
+                                                <input
+                                                    className={styles.editInput}
+                                                    value={item.name || item.title || ''}
+                                                    onChange={(e) => {
+                                                        const upd = [...editItinerary];
+                                                        upd[realIdx] = { ...upd[realIdx], name: e.target.value };
+                                                        setEditItinerary(upd);
+                                                    }}
+                                                    style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}
+                                                />
+                                                <textarea
+                                                    className={styles.editTextarea}
+                                                    value={item.description || ''}
+                                                    onChange={(e) => {
+                                                        const upd = [...editItinerary];
+                                                        upd[realIdx] = { ...upd[realIdx], description: e.target.value };
+                                                        setEditItinerary(upd);
+                                                    }}
+                                                    rows={4}
+                                                />
+                                                <div className={styles.dayEditControls}>
+                                                    <button className={styles.editRemoveBtn} onClick={() => moveItineraryItemUp(realIdx)} disabled={realIdx === 0} type="button"><ArrowUp size={14} /></button>
+                                                    <button className={styles.editRemoveBtn} onClick={() => moveItineraryItemDown(realIdx)} disabled={realIdx === editItinerary.length - 1} type="button"><ArrowDown size={14} /></button>
+                                                    <button className={styles.editRemoveBtn} onClick={() => removeItineraryItem(realIdx)} type="button"><X size={14} /></button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className={styles.dayTitle}>{item.name || item.title}</div>
+                                                {item.description && <div className={styles.dayDesc}>{item.description}</div>}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {isEditing && pageIdx === itineraryPagesV2.length - 1 && (
+                            <div style={{ marginTop: '14px' }}>
+                                <select className={styles.editInput} value="" onChange={handleAddExcursion} style={{ padding: '8px', cursor: 'pointer' }}>
+                                    <option value="">+ Añadir Día / Excursión...</option>
+                                    {availableExcursions.map(exc => (
+                                        <option key={exc.id} value={exc.id}>{exc.name}</option>
+                                    ))}
+                                    <option value="custom">Día Libre / Personalizado</option>
+                                </select>
+                            </div>
+                        )}
+
+                        <div className={styles.pageFooter}>
+                            <div className={styles.legalLine}><span className={styles.brandName}>Julely Travels</span> · Documento oficial sujeto a términos y condiciones.</div>
+                            <div className={styles.pageNum}>Pág. {pageCounter.n} / {totalPages}</div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* ============== NOTES PAGES ============== */}
+                {hasNotes && displayedNotesPages.map((pageText, pageIdx) => (
+                    <div key={`notes-${pageIdx}`} className={styles.voucherPage}>
+                        {(() => { nextPageNum(); return null; })()}
+                        <div className={styles.pageHeader}>
+                            <img src="/images/logo_transparent.png" alt="Julely" />
+                            <div className={styles.voucherIdLabel}>VOUCHER &nbsp;<strong>{voucher_code}</strong></div>
+                        </div>
+
+                        {pageIdx === 0 && (
+                            <div className={styles.section}>
+                                <div className={styles.sectionTitle}>Notas adicionales</div>
+                                <div className={styles.sectionSubtitle}>Información para su viaje</div>
+                            </div>
+                        )}
+
+                        <div className={styles.notesText}>
+                            {isEditing && pageIdx === 0 ? (
+                                <textarea className={styles.editTextarea} value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={14} placeholder="Notas adicionales para el cliente..." />
+                            ) : (!isEditing || pageIdx > 0 ? pageText : null)}
+                        </div>
+
+                        <div className={styles.pageFooter}>
+                            <div className={styles.legalLine}><span className={styles.brandName}>Julely Travels</span> · Documento oficial sujeto a términos y condiciones.</div>
+                            <div className={styles.pageNum}>Pág. {pageCounter.n} / {totalPages}</div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* ============== TERMS PAGES ============== */}
+                {hasTerms && displayedTermsPages.map((pageText, pageIdx) => {
+                    const isLast = pageIdx === displayedTermsPages.length - 1;
+                    return (
+                        <div key={`terms-${pageIdx}`} className={styles.voucherPage}>
+                            {(() => { nextPageNum(); return null; })()}
+                            <div className={styles.pageHeader}>
+                                <img src="/images/logo_transparent.png" alt="Julely" />
+                                <div className={styles.voucherIdLabel}>VOUCHER &nbsp;<strong>{voucher_code}</strong></div>
+                            </div>
+
+                            {pageIdx === 0 && (
+                                <>
+                                    <div className={styles.section} style={{ marginBottom: '6px' }}>
+                                        <div className={styles.sectionTitle}>Términos y condiciones</div>
+                                        <div className={styles.sectionSubtitle}>Léalos detenidamente antes de su viaje</div>
+                                    </div>
+                                    <div className={styles.termsEditNote}>[Términos editables desde Configuración → Términos y condiciones]</div>
+                                </>
+                            )}
+
+                            <div className={styles.termsText}>
+                                {isEditing && pageIdx === 0 ? (
+                                    <textarea className={styles.editTextarea} value={editTerms} onChange={(e) => setEditTerms(e.target.value)} rows={28} style={{ height: '600px', columnCount: 1 }} />
+                                ) : (
+                                    !isEditing || pageIdx > 0 ? pageText.split('\n').filter(l => l.trim()).map((line, i) => (
+                                        <p key={i}>{line}</p>
+                                    )) : null
+                                )}
+                            </div>
+
+                            {isLast && (
+                                <div className={styles.signatureBlock}>
+                                    <div className={styles.docNote}>
+                                        Documento de viaje oficial.<br />
+                                        Sujeto a los términos y condiciones estipulados.<br />
+                                        Valide la información antes de su viaje.
+                                        <span className={styles.legalName}>Imay LLC H/N/C Julely · Razón social</span>
+                                    </div>
+                                    <div className={styles.signWrap}>
+                                        <img src="/images/footer_signature_v2.jpg" alt="Firma Julely" />
+                                        <div className={styles.signLabel}>Julely Travels</div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className={styles.pageFooter}>
+                                <div className={styles.legalLine}><span className={styles.brandName}>Julely Travels</span> · Imay LLC H/N/C Julely · 939-525-0701 · info@julely.com</div>
+                                <div className={styles.pageNum}>Pág. {pageCounter.n} / {totalPages}</div>
+                            </div>
+                        </div>
+                    );
+                })}
+
+            </div>
+
+            {/* ============== ACTION BAR ============== */}
+            <div className={styles.actions}>
+                <button className={styles.btnBack} onClick={() => router.back()}>
+                    <ChevronLeft size={18} /> Volver
+                </button>
+                {isEditing && (
+                    <button className={styles.btnPrice} type="button" onClick={() => setShowPrice(!showPrice)}>
+                        {showPrice ? <Eye size={16} /> : <EyeOff size={16} />}
+                        Precio: {showPrice ? 'Visible' : 'Oculto'}
+                    </button>
+                )}
+                <button className={`${styles.btnEdit} ${isEditing ? styles.active : ''}`} onClick={handleToggleEdit}>
                     <Pencil size={18} /> {isEditing ? 'Guardar y Listo' : 'Editar'}
                 </button>
                 <button className={styles.btnDownload} onClick={() => {
                     if (isEditing) handleToggleEdit().then(() => setTimeout(() => window.print(), 300));
                     else setTimeout(() => window.print(), 100);
                 }}>
-                    <Download size={20} /> Descargar PDF
+                    <Download size={18} /> Descargar PDF
                 </button>
             </div>
         </>
