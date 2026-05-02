@@ -20,6 +20,9 @@ function AppShell({ Component, pageProps }) {
             <meta name="description" content="Julely - Viajando por el Mundo. Gestión profesional de viajes y turismo." />
             <link rel="icon" type="image/png" href="/favicon.png" />
             <link rel="apple-touch-icon" href="/favicon.png" />
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
         </Head>
     );
 

@@ -1,828 +1,747 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+/* =====================================================================
+   VOUCHER · Julely Travels — V2 (premium luxury travel layout)
+   Paleta: morado Julely + dorado acento + crema
+   Tipografía: Playfair Display (titles serif) + Inter (body) + Cormorant (italic accents)
+   Cada .voucherPage = exactamente 1 hoja A4
+   ===================================================================== */
 
 .voucherContainer {
+    --julely-purple: #7F13EC;
+    --julely-purple-deep: #5A0CB0;
+    --julely-purple-light: #F4E8FF;
+    --gold: #C9A961;
+    --gold-light: #E5D4A1;
+    --ink: #1A1A2E;
+    --ink-soft: #4A4A6A;
+    --paper: #FFFFFF;
+    --paper-warm: #FAF7F2;
+    --line: #E8E2D5;
+
     min-height: 100vh;
-    background: #f7f6f8;
+    background: #ddd;
     padding: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: #0f172a;
+    gap: 1.2rem;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--ink);
 }
 
 .voucherPage {
     width: 210mm;
-    height: 297mm;
-    /* Strictly A4 height */
-    max-height: 297mm;
-    background: white;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    height: 295mm;
+    padding: 14mm 16mm 16mm 16mm;
+    background: var(--paper);
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
     position: relative;
     display: flex;
     flex-direction: column;
-    border-radius: 12px;
     overflow: hidden;
     page-break-after: always;
-    break-after: always;
-    border: 1px solid #e2e8f0;
+    break-after: page;
     flex-shrink: 0;
 }
 
-/* 1. Header & Hero Area */
-.pagePadding {
-    padding: 1rem 2.5rem 2.5rem 2.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.voucherPage:last-child {
+    page-break-after: auto;
 }
 
-.topHeader {
+.coverPage {
+    padding: 0;
+}
+
+@media print {
+    .voucherContainer {
+        background: white;
+        padding: 0;
+        gap: 0;
+    }
+    .voucherPage {
+        margin: 0 auto;
+        box-shadow: none;
+    }
+}
+
+/* === HEADER (en cada página excepto cover) === */
+.pageHeader {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-}
-
-.brandInfo {
-    display: flex;
     align-items: center;
-    gap: 1rem;
+    padding-bottom: 9px;
+    border-bottom: 1.5px solid var(--gold);
+    margin-bottom: 16px;
 }
-
-.logoImage {
-    height: 145px;
-    object-fit: contain;
-}
-
-.brandText {}
-
-.brandTitle {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #0f172a;
-    line-height: 1;
-    margin: 0;
-}
-
-.brandSubtitle {
-    color: var(--primary-color);
-    font-weight: 700;
-    font-size: 0.75rem;
+.pageHeader img { height: 64px; }
+.voucherIdLabel {
+    font-size: 9px;
+    color: var(--ink-soft);
+    letter-spacing: 2px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0;
 }
-
-.confirmationBox {
-    text-align: right;
-}
-
-.confLabel {
-    font-size: 0.65rem;
+.voucherIdLabel strong {
+    color: var(--julely-purple);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #64748b;
-    margin-bottom: 0.25rem;
 }
 
-.confNumber {
-    background: rgba(127, 19, 236, 0.05);
-    border: 1px solid rgba(127, 19, 236, 0.2);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 1.25rem;
-    font-weight: 900;
-    color: var(--primary-color);
-    letter-spacing: -0.5px;
+/* === FOOTER (en cada página excepto cover) === */
+.pageFooter {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8.5px;
+    color: var(--ink-soft);
+    letter-spacing: 0.3px;
+}
+.pageFooter .legalLine { flex: 1; }
+.pageFooter .brandName {
+    font-family: 'Playfair Display', serif;
+    color: var(--julely-purple);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+}
+.pageFooter .pageNum {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    color: var(--julely-purple);
+    font-weight: 600;
 }
 
-/* 2. Hero Destination Image */
-.heroBanner {
+/* ============== COVER PAGE ============== */
+.coverHero {
     position: relative;
-    height: 280px;
-    width: 100%;
-    border-radius: 12px;
+    height: 148mm;
     overflow: hidden;
-    background: #f1f5f9;
+    background: linear-gradient(135deg, var(--julely-purple-deep), var(--julely-purple));
 }
-
-.heroImg {
+.coverHero img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center 20%;
 }
-
-.heroOverlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to right, rgba(127, 19, 236, 0.5), rgba(236, 72, 153, 0.5));
-    mix-blend-mode: multiply;
-}
-
-.heroText {
-    position: absolute;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    color: white;
-    z-index: 10;
-}
-
-.heroBadge {
-    background: var(--primary-color);
-    padding: 0.25rem 0.75rem;
-    border-radius: 99px;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: inline-block;
-    margin-bottom: 0.5rem;
-}
-
-.heroTitle {
-    font-size: 2.25rem;
-    font-weight: 900;
-    margin: 0;
-    line-height: 1;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-/* 3. Essential Trip Info Grid */
-.infoGrid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-}
-
-.infoCard {
-    padding: 1.25rem;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-}
-
-.infoCardHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.infoCardHeader h3 {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0;
-}
-
-/* Traveler Variant */
-.cardTraveler {
-    background: #f8fafc;
-    border: 1px solid #f1f5f9;
-}
-
-.cardTraveler .infoCardHeader {
-    color: var(--primary-color);
-}
-
-.travelerName {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 0.25rem 0;
-}
-
-.travelerSub {
-    font-size: 0.85rem;
-    color: #64748b;
-    margin: 0;
-}
-
-.cardFooter {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.cardFooterLabel {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #94a3b8;
-}
-
-.cardFooterVal {
-    font-weight: 600;
-    color: #1e293b;
-    font-size: 0.9rem;
-}
-
-/* Schedule Variant */
-.cardSchedule {
-    background: rgba(127, 19, 236, 0.03);
-    border: 1px solid rgba(127, 19, 236, 0.1);
-}
-
-.cardSchedule .infoCardHeader {
-    color: #ec4899;
-}
-
-.scheduleRow {
-    margin-bottom: 0.5rem;
-}
-
-.scheduleRow span {
-    display: block;
-}
-
-.scheduleLabel {
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
-.scheduleVal {
-    font-weight: 700;
-    color: #0f172a;
-}
-
-/* Pricing Variant */
-.cardPricing {
-    background: var(--primary-color);
-    color: white;
-    justify-content: space-between;
-}
-
-.cardPricing .infoCardHeader {
-    color: white;
-}
-
-.priceLabel {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    opacity: 0.8;
-}
-
-.priceVal {
-    font-size: 2rem;
-    font-weight: 900;
-    margin: 0;
-    line-height: 1.2;
-}
-
-.cardPricing .cardFooter {
-    border-top-color: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* Hotel Subcard */
-.hotelDetailsBox {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.hotelDetailsBox::before {
+.coverHero::after {
     content: '';
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 6rem;
-    height: 6rem;
-    background: rgba(127, 19, 236, 0.05);
-    border-bottom-left-radius: 100%;
+    inset: 0;
+    background: linear-gradient(180deg,
+        rgba(26, 26, 46, 0.10) 0%,
+        rgba(26, 26, 46, 0.40) 55%,
+        rgba(90, 12, 176, 0.85) 100%);
 }
-
-.hotelHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+.coverBrand {
+    position: absolute;
+    top: 18mm;
+    left: 16mm;
+    z-index: 2;
 }
-
-.hotelIcon {
-    background: rgba(127, 19, 236, 0.1);
-    color: var(--primary-color);
-    padding: 0.5rem;
-    border-radius: 8px;
-    display: flex;
+.coverBrand img {
+    height: 100px;
+    filter: brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
 }
-
-.hotelCatTitle {
+.coverMeta {
+    position: absolute;
+    top: 20mm;
+    right: 16mm;
+    z-index: 2;
+    text-align: right;
+    color: white;
+}
+.coverBadge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 9px;
     font-weight: 700;
-    font-size: 0.9rem;
+    letter-spacing: 3px;
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-bottom: 8px;
+}
+.coverCode {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+}
+.coverText {
+    position: absolute;
+    bottom: 14mm;
+    left: 16mm;
+    right: 16mm;
+    z-index: 2;
+    color: white;
+}
+.coverLabel {
+    font-size: 10.5px;
+    letter-spacing: 4px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0;
+    opacity: 0.9;
+    margin-bottom: 6px;
 }
-
-.hotelCatSub {
-    font-size: 0.75rem;
-    color: #64748b;
-    margin: 0;
-}
-
-.hotelGrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-
-.hotelCol {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.hotelItem {}
-
-.hotelItemLabel {
-    font-size: 0.65rem;
+.coverTitle {
+    font-family: 'Playfair Display', serif;
     font-weight: 700;
+    font-size: 72px;
+    letter-spacing: -2px;
+    line-height: 0.95;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    color: white;
+}
+.coverSubtitle {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 21px;
+    font-weight: 300;
+    opacity: 0.95;
+    max-width: 70%;
+    line-height: 1.3;
+}
+
+.coverInfoStrip {
+    background: var(--paper-warm);
+    padding: 16px 16mm;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 22px;
+    border-bottom: 1px solid var(--line);
+}
+.coverInfoStrip.noPrice {
+    grid-template-columns: 1.4fr 1fr 1fr;
+}
+.infoBlock { }
+.infoBlock .label {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--gold);
     text-transform: uppercase;
-    color: #94a3b8;
-    margin-bottom: 0.25rem;
-}
-
-.hotelItemVal {
-    font-size: 1.1rem;
     font-weight: 700;
-    color: #0f172a;
-    margin: 0;
+    margin-bottom: 5px;
 }
-
-.hotelItemSub {
-    font-size: 0.85rem;
-    color: #475569;
-    margin: 0;
+.infoBlock .value {
+    font-family: 'Playfair Display', serif;
+    font-size: 14.5px;
+    color: var(--ink);
+    font-weight: 600;
+    line-height: 1.2;
 }
-
-.hotelStar {
-    color: #fbbf24;
-    margin-top: 0.25rem;
-    display: flex;
-    gap: 2px;
+.infoBlock .value.priceVal {
+    color: var(--julely-purple-deep);
+    font-size: 19px;
 }
-
-.hotelStar svg {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
-}
-
-/* Section Blocks for Page 2, 3, etc. */
-.mainContent {
-    flex: 1;
-    padding: 2rem 2.5rem 1.5rem 2.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.sectionBlock {
-    break-inside: avoid;
-    margin-bottom: 1rem;
-}
-
-.sectionTitle {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #0f172a;
-    margin: 0 0 1.25rem 0;
-}
-
-.sectionTitle svg {
-    color: var(--primary-color);
-}
-
-/* Checklist */
-.checklistGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    background: rgba(127, 19, 236, 0.03);
-    border: 1px solid rgba(127, 19, 236, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-}
-
-.checkItem {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    font-weight: 500;
-    color: #334155;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
-.customCheck {
-    background: rgba(127, 19, 236, 0.2);
-    color: var(--primary-color);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 12px;
-    font-weight: bold;
+.infoBlock .sub {
+    font-size: 9px;
+    color: var(--ink-soft);
     margin-top: 2px;
 }
 
-.descriptionText {
-    font-size: 1rem;
-    color: #475569;
-    line-height: 1.7;
-    font-weight: 300;
-}
-
-/* Gallery inside Section */
-.galleryGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 200px;
-    gap: 1rem;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.galleryImg {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-}
-
-/* Itinerary */
-.itineraryList {
+.coverBody {
+    padding: 16px 16mm 12px;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 14px;
 }
-
-.itineraryItem {
-    display: flex;
-    gap: 1.5rem;
-    break-inside: avoid;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.itineraryItem:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.dayBadge {
-    background: #0f172a;
-    color: white;
-    font-weight: 800;
-    font-size: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    height: fit-content;
-    white-space: nowrap;
-    text-align: center;
-    min-width: 65px;
-}
-
-.itineraryContent {
-    flex: 1;
-}
-
-.itineraryTitle {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
+.coverSection h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 12px;
+    color: var(--julely-purple-deep);
+    text-transform: uppercase;
+    letter-spacing: 3px;
     font-weight: 700;
-    color: #0f172a;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--gold-light);
+}
+.personalGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 18px;
+}
+.personalItem .lbl {
+    font-size: 7.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 2px;
+}
+.personalItem .val {
+    font-size: 11.5px;
+    color: var(--ink);
+    font-weight: 500;
+}
+.personalItem .valEmail {
+    font-size: 10px;
 }
 
-.itineraryDesc {
-    margin: 0 0 1rem 0;
-    font-size: 0.95rem;
-    color: #475569;
-    line-height: 1.6;
-    font-weight: 300;
+.asesorCard {
+    background: linear-gradient(135deg, rgba(127, 19, 236, 0.04), rgba(201, 169, 97, 0.06));
+    padding: 12px 16px;
+    border-left: 3px solid var(--julely-purple);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.asesorAvatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--julely-purple);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.asesorInfo { flex: 1; }
+.asesorTopLabel {
+    font-size: 8px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.asesorName {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 2px;
+}
+.asesorMeta {
+    font-size: 10px;
+    color: var(--ink-soft);
 }
 
-.itineraryImageWrapper {
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.itineraryImageWrapper img {
-    width: 100%;
-    height: auto;
-    max-height: 160px;
-    object-fit: contain;
-    display: block;
-}
-
-/* Terms & Footer Note */
-.termsText {
-    font-size: 0.8rem;
-    color: #64748b;
-    line-height: 1.6;
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 12px;
-    white-space: pre-line;
-    border: 1px solid #e2e8f0;
-}
-
-.pageFooter {
-    margin-top: auto;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e2e8f0;
+.coverFooterStrip {
+    padding: 12px 16mm;
+    background: var(--ink);
+    color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 9px;
+}
+.coverFooterStrip strong {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    color: var(--gold-light);
 }
 
-.footerNote {
-    color: #94a3b8;
-    font-size: 0.75rem;
-    max-width: 60%;
-    line-height: 1.4;
+/* ============== SECTION (general pages) ============== */
+.section {
+    margin-bottom: 18px;
 }
-
-.footerContact {
-    text-align: right;
-}
-
-.footerContactLabel {
-    font-size: 0.65rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: #94a3b8;
-}
-
-.footerContactEmail {
+.sectionTitle {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--ink);
     font-weight: 700;
-    color: #475569;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sectionTitle::before {
+    content: '';
+    width: 28px;
+    height: 2px;
+    background: var(--gold);
+    display: inline-block;
+}
+.sectionSubtitle {
+    font-size: 9.5px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    margin-left: 40px;
 }
 
-/* Edit Inputs */
-.editInput {
-    border: none;
-    border-bottom: 2px dashed rgba(127, 19, 236, 0.5);
-    background: transparent;
-    font: inherit;
-    color: inherit;
-    width: 100%;
-    padding: 0.25rem 0;
-    outline: none;
+/* HOTEL */
+.hotelCard {
+    background: var(--paper-warm);
+    border-left: 4px solid var(--gold);
+    padding: 16px 20px;
+    border-radius: 2px;
+}
+.hotelCard + .hotelCard {
+    margin-top: 10px;
+}
+.hotelName {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--julely-purple-deep);
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+.hotelTag {
+    font-size: 9px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+.hotelGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 22px;
+}
+.hotelItem .lbl {
+    font-size: 7.5px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    margin-bottom: 2px;
+    font-weight: 700;
+}
+.hotelItem .val {
+    font-size: 11px;
+    color: var(--ink);
+    font-weight: 500;
 }
 
-.editInput:focus {
-    border-bottom-color: var(--primary-color);
+/* INCLUDES */
+.includesGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 20px;
 }
-
-.cardPricing .editInput {
-    border-bottom-color: rgba(255, 255, 255, 0.5);
+.includeItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 11px;
+    color: var(--ink);
+}
+.includeCheck {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--gold);
     color: white;
-}
-
-.editTextarea {
-    width: 100%;
-    border: 1px dashed var(--primary-color);
-    border-radius: 8px;
-    padding: 0.75rem;
-    font: inherit;
-    color: inherit;
-    background: #f8fafc;
-    min-height: 100px;
-    resize: vertical;
-}
-
-.editRemoveBtn,
-.editAddBtn {
-    cursor: pointer;
-    border: none;
-    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.editRemoveBtn {
-    color: #ef4444;
-    padding: 4px;
-    border-radius: 4px;
-}
-
-.editRemoveBtn:hover {
-    background: #fee2e2;
-}
-
-.editAddBtn {
-    color: var(--primary-color);
-    font-size: 0.85rem;
-    font-weight: 600;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px dashed var(--primary-color);
-    border-radius: 8px;
-    margin-top: 1rem;
-}
-
-.editAddBtn:hover {
-    background: rgba(127, 19, 236, 0.05);
-}
-
-/* Quick Info extra fields (Phone, Nationality, etc.) - If used */
-.extraInfoGrid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    row-gap: 1.5rem;
-    margin-top: -1.5rem;
-    /* pull up closer to hero */
-    margin-bottom: 2rem;
-    background: white;
-    padding: 1.5rem 1rem;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-}
-
-.extraInfoItem {
-    text-align: center;
-    flex: 0 0 33.333%;
-}
-
-.extraIcon {
-    color: var(--primary-color);
-    margin-bottom: 0.25rem;
-    display: flex;
-    justify-content: center;
-}
-
-.extraLabel {
-    font-size: 0.65rem;
+    font-size: 9px;
     font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* DESTINATION DESCRIPTION */
+.destinationText {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    text-align: justify;
+}
+.destinationText::first-letter {
+    font-family: 'Playfair Display', serif;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--julely-purple);
+    float: left;
+    line-height: 1;
+    margin-right: 8px;
+    margin-top: 4px;
+}
+
+/* ITINERARY DAYS */
+.itineraryDay {
+    display: grid;
+    grid-template-columns: 65mm 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+}
+.itineraryDay.noImage {
+    grid-template-columns: 1fr;
+}
+.itineraryDay.compact {
+    grid-template-columns: 1fr;
+    background: var(--paper-warm);
+    padding: 10px 16px;
+    border-left: 3px solid var(--gold-light);
+    margin-bottom: 12px;
+}
+.itineraryDay.compact .dayTextBlock {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.itineraryDay.compact .dayBadge {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+.dayTitleInline {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    flex: 1;
+}
+.dayDescInline {
+    font-size: 10px;
+    color: var(--ink-soft);
+    font-style: italic;
+}
+.dayImage {
+    width: 100%;
+    height: 58mm;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+}
+.dayImageStack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.dayImageStack img {
+    width: 100%;
+    height: 24mm;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+}
+.dayBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--julely-purple);
+    color: white;
+    padding: 4px 12px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
-    color: #94a3b8;
+    border-radius: 2px;
+    margin-bottom: 6px;
 }
-
-.extraVal {
-    font-size: 0.85rem;
+.dayBadge .dayNum {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--gold-light);
+}
+.dayTitle {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 5px;
+    line-height: 1.15;
+}
+.dayDesc {
+    font-size: 10px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    text-align: justify;
+}
+.dayEditControls {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
 }
 
-/* Watermark — aparece en todas las páginas via ::before */
-.voucherPage::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-45deg);
-    width: 65%;
-    height: 220px;
-    background-image: url('/images/logo_transparent.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.10;
-    pointer-events: none;
-    z-index: 0;
+/* TERMS */
+.termsEditNote {
+    font-size: 8px;
+    color: var(--gold);
+    font-style: italic;
+    text-align: right;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+.termsText {
+    font-size: 7.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    column-count: 2;
+    column-gap: 14px;
+    text-align: justify;
+    flex: 1;
+    overflow: hidden;
+}
+.termsText strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+.termsText p {
+    margin-bottom: 6px;
 }
 
-/* Sticky Print Signature */
-.printSignature {
-    display: none;
+/* SIGNATURE BLOCK */
+.signatureBlock {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1.5px solid var(--gold);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+.signatureBlock .docNote {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--julely-purple-deep);
+    max-width: 60%;
+    line-height: 1.4;
+}
+.signatureBlock .docNote .legalName {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-size: 8px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+}
+.signatureBlock .signWrap {
+    text-align: right;
+}
+.signatureBlock .signWrap img {
+    height: 42px;
+    opacity: 0.9;
+}
+.signatureBlock .signLabel {
+    font-size: 8px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
 }
 
+/* NOTAS section */
+.notesText {
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-line;
+}
 
-/* Actions Buttons (Unchanged Logic, Adapted Colors) */
+/* ============== EDIT MODE INPUTS ============== */
+.editInput {
+    background: rgba(127, 19, 236, 0.06);
+    border: 1px solid var(--julely-purple-light);
+    color: var(--ink);
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: inherit;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+}
+.editInput:focus {
+    outline: none;
+    border-color: var(--julely-purple);
+    background: rgba(127, 19, 236, 0.1);
+}
+.editInputDark {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+.editInputDark::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+.editTextarea {
+    background: rgba(127, 19, 236, 0.06);
+    border: 1px solid var(--julely-purple-light);
+    color: var(--ink);
+    padding: 8px 10px;
+    border-radius: 3px;
+    font-size: 10.5px;
+    font-family: 'Inter', sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    line-height: 1.5;
+}
+.editAddBtn {
+    background: rgba(127, 19, 236, 0.08);
+    border: 1px dashed var(--julely-purple);
+    color: var(--julely-purple);
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 6px;
+}
+.editRemoveBtn {
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: rgb(220, 38, 38);
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+/* ============== ACTION BAR (estilo pill navbar) ============== */
 .actions {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     z-index: 100;
 }
-
 .btnBack,
 .btnEdit,
-.btnDownload {
+.btnDownload,
+.btnPrice {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    padding: 0.7rem 1.3rem;
     border-radius: 50px;
     font-weight: 700;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btnBack {
-    background: white;
-    border: 1px solid #e2e8f0;
-    color: #0f172a;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btnEdit {
-    background: white;
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btnEdit.active {
-    background: var(--primary-color);
-    color: white;
-}
-
-.btnDownload {
-    background: var(--primary-color);
+    transition: all 0.15s ease;
+    background: rgba(127, 19, 236, 0.10);
     border: none;
-    color: white;
-    box-shadow: 0 4px 15px rgba(127, 19, 236, 0.4);
+    color: var(--julely-purple);
 }
-
+.btnBack:hover,
+.btnPrice:hover {
+    background: rgba(127, 19, 236, 0.18);
+}
+.btnEdit:hover {
+    background: rgba(127, 19, 236, 0.18);
+}
+.btnEdit.active {
+    background: rgba(127, 19, 236, 0.30);
+    color: var(--julely-purple-deep);
+}
+.btnDownload {
+    background: rgba(127, 19, 236, 0.30);
+    color: var(--julely-purple-deep);
+}
 .btnDownload:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(127, 19, 236, 0.6);
+    background: var(--julely-purple);
+    color: white;
 }
 
-/* Print Mode */
 @media print {
-    @page {
-        margin: 0;
-        /* Strictly zero margins to let CSS handle A4 */
-        size: A4 portrait;
-    }
-
-    .voucherContainer {
-        padding: 0 !important;
-        margin: 0 !important;
-        background: white;
-        display: block;
-        gap: 0;
-    }
-
-    .voucherPage {
-        width: 210mm;
-        height: 297mm;
-        max-height: 297mm;
-        box-shadow: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        page-break-after: always;
-        break-after: page;
-        overflow: hidden;
-        position: relative;
-    }
-
     .actions {
         display: none !important;
-    }
-
-    .heroBanner {
-        height: 180px;
-    }
-
-    .printSignature {
-        position: absolute;
-        display: block !important;
-        bottom: 10mm;
-        right: 15mm;
-        width: 120px;
-        height: auto;
-        z-index: 999;
-    }
-
-    .printSignature img {
-        width: 100%;
-        height: auto;
-        display: block;
-    }
-
-    .itineraryImageWrapper img {
-        max-height: 130px;
-        object-fit: contain;
-        width: 100%;
-        height: auto;
-        display: block;
     }
 }
