@@ -764,7 +764,7 @@
         overflow-x: hidden;
     }
     .voucherPage {
-        --mobile-scale: calc((100vw - 16px) / 794);
+        --mobile-scale: calc((100vw - 16px) / 794px);
         transform: scale(var(--mobile-scale));
         transform-origin: top left;
         margin-bottom: calc((var(--mobile-scale) - 1) * 295mm + 12px);
