@@ -155,7 +155,6 @@
 }
 .coverBrand img {
     height: 100px;
-    filter: brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
 }
 .coverMeta {
     position: absolute;
@@ -532,24 +531,18 @@
     border: 1px solid var(--line);
 }
 .dayBadge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: inline-block;
     background: var(--julely-purple);
-    color: white;
-    padding: 4px 12px;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 2.5px;
+    color: #FFFFFF;
+    padding: 5px 14px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     border-radius: 2px;
     margin-bottom: 6px;
-}
-.dayBadge .dayNum {
-    font-family: 'Playfair Display', serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--gold-light);
+    line-height: 1;
 }
 .dayTitle {
     font-family: 'Playfair Display', serif;

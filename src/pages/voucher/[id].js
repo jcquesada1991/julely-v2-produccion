@@ -477,7 +477,7 @@ export default function Voucher() {
                             alt={destTitleClean}
                         />
                         <div className={styles.coverBrand}>
-                            <img src="/images/logo_transparent.png" alt="Julely" />
+                            <img src="/images/logo_white.png" alt="Julely" />
                         </div>
                         <div className={styles.coverMeta}>
                             <div className={styles.coverBadge}>VOUCHER OFICIAL</div>
@@ -707,7 +707,7 @@ export default function Voucher() {
                                 return (
                                     <div key={realIdx} className={`${styles.itineraryDay} ${styles.compact}`}>
                                         <div className={styles.dayTextBlock}>
-                                            <div className={styles.dayBadge}><span className={styles.dayNum}>{dayNumStr}</span> &nbsp; DÍA</div>
+                                            <div className={styles.dayBadge}>{`${dayNumStr} · DÍA`}</div>
                                             {isEditing ? (
                                                 <input
                                                     className={styles.editInput}
@@ -742,7 +742,7 @@ export default function Voucher() {
                                 <div key={realIdx} className={`${styles.itineraryDay} ${!hasImg ? styles.noImage : ''}`}>
                                     {hasImg && renderImageBlock(item)}
                                     <div className={styles.dayTextBlock}>
-                                        <div className={styles.dayBadge}><span className={styles.dayNum}>{dayNumStr}</span> &nbsp; DÍA</div>
+                                        <div className={styles.dayBadge}>{`${dayNumStr} · DÍA`}</div>
                                         {isEditing ? (
                                             <>
                                                 <input
